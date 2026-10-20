@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>parallax.observer</title>
+<meta name="description" content="A micro-LAB for exploring GenAI persuasion. Feed a model three bodies of world knowledge and watch it try to convince you.">
+<link rel="icon" href="assets/images/logo-small.jpg">
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --line: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --flat: #d29922;
+    --sphere: #3fb950;
+    --disc: #a371f7;
+    --norse: #db6d28;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 48px 24px 96px; }
+  header { text-align: center; margin-bottom: 56px; }
+  header img { max-width: 420px; width: 100%; height: auto; border-radius: 12px; }
+  h1 { font-size: 2.1rem; margin: 24px 0 8px; letter-spacing: -0.02em; }
+  h2 { font-size: 1.35rem; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+  h3 { font-size: 1.05rem; margin: 28px 0 8px; }
+  p { margin: 12px 0; }
+  .tagline { color: var(--muted); font-size: 1.05rem; }
+  .lead { color: var(--muted); }
+  code {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 1px 6px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.88em;
+  }
+  pre {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+  }
+  pre code { background: none; border: none; padding: 0; }
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .card h3 { margin-top: 0; }
+  .card p { color: var(--muted); font-size: 0.93rem; margin-bottom: 0; }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 8px; }
+  .flat { background: var(--flat); }
+  .sphere { background: var(--sphere); }
+  .disc { background: var(--disc); }
+  .norse { background: var(--norse); }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.93rem; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  footer { margin-top: 72px; padding-top: 24px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.88rem; }
+  .note {
+    border-left: 3px solid var(--accent);
+    background: var(--panel);
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+    margin: 20px 0;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <img src="assets/images/logo-full.png" alt="parallax.observer">
+  <h1>parallax.observer</h1>
+  <p class="tagline">Earthify you! Guaranteed!!!</p>
+</header>
+
+<p class="lead">
+A micro-LAB for exploring GenAI persuasion and psychophancy, for teens 16+.
+The agent tries to persuade you about the opposite opinion on the shape of the
+Earth. You watch the whole thing happen.
+</p>
+
+<h2>Four bodies of world knowledge</h2>
+<p>
+Each one is a separate corpus with its own sources, its own arguments and its
+own failure modes. The agent picks one and argues.
+</p>
+
+<div class="grid">
+  <div class="card">
+    <h3><span class="dot flat"></span>Flat Earth</h3>
+    <p>Victorian zetetic astronomy, biblical cosmology, Vedic cosmology. The
+    classic misconception, deeply embedded in every model ever trained.</p>
+  </div>
+  <div class="card">
+    <h3><span class="dot sphere"></span>Spherical Earth</h3>
+    <p>Geodesy, satellite measurement, empirical evidence. The baseline the
+    agent is trying to move you away from.</p>
+  </div>
+  <div class="card">
+    <h3><span class="dot disc"></span>Discworld</h3>
+    <p>Pratchett. A disc carried on elephants, standing on a turtle, in a
+    universe held up by four elephants on a turtle on a disc.</p>
+  </div>
+  <div class="card">
+    <h3><span class="dot norse"></span>Norse cosmology</h3>
+    <p>Nine worlds, Yggdrasil, the Bifrost bridge. Mythology with its own
+    internal physics and none of our physics.</p>
+  </div>
+</div>
+
+<div class="note">
+<strong>Why the strange ones matter.</strong> A flat Earth argument is
+deeply embedded in the training data. The model knows the Bedford Level
+experiment inside out and talks you out of it every time. That case is
+solved. Push it into Norse cosmology or a Pratchett disc and the ground
+disappears: the training data is thin, the facts are odd, and the errors get
+odd with them. That is the interesting part, and it is the part worth
+showing.
+</div>
+
+<h2>Two tiers of knowledge</h2>
+<p>
+Every fact lives in one of two tiers, and the split matters for what the lab
+can prove.
+</p>
+<table>
+  <tr><th>Tier</th><th>What it holds</th><th>How it is made</th></tr>
+  <tr>
+    <td><code>knowledge</code></td>
+    <td>The source text itself, per worldview</td>
+    <td>Verbatim from the sources, only the summary is generated</td>
+  </tr>
+  <tr>
+    <td><code>enrichment</code></td>
+    <td>Catchphrases, quotes, misleading claims</td>
+    <td>Written from scratch, expanded into three tiers by a model</td>
+  </tr>
+</table>
+<p>
+The <code>knowledge</code> tier can be cited. The <code>enrichment</code> tier
+is ammunition, and it is allowed to be colorful. The fact checker uses the
+first, the spokesperson uses the second.
+</p>
+
+<h2>Everything runs locally</h2>
+<p>
+One RTX 4070, twelve gigabytes, no cloud account, no API key.
+</p>
+<table>
+  <tr><th>Service</th><th>Port</th><th>What it does</th></tr>
+  <tr><td>Chat</td><td>11433</td><td>llama.cpp serving granite-4.0-h-tiny</td></tr>
+  <tr><td>Embeddings</td><td>7997</td><td>llama.cpp serving EmbeddingGemma 2</td></tr>
+  <tr><td>Memory</td><td>1933</td><td>OpenViking context server</td></tr>
+  <tr><td>Observability</td><td>6006</td><td>Phoenix</td></tr>
+  <tr><td>App</td><td>8668</td><td>The terminal style chat UI</td></tr>
+</table>
+
+<h3>Run it</h3>
+<pre><code>pixi install
+docker/fetch-models.sh
+docker/up.sh
+docker/status.sh</code></pre>
+<p>Then open <a href="http://localhost:8668">http://localhost:8668</a>.</p>
+
+<h2>Labs</h2>
+<p>
+The lab instructions live in the repository, one page per experiment.
+</p>
+<ul>
+  <li><a href="../lab/README.md">Lab index</a> - how the labs are organised</li>
+  <li><a href="../lab/01-three-truths.md">Lab 1: Three truths</a> - one
+      question, three bodies of knowledge, watch them collide</li>
+  <li><a href="../lab/02-outside-training.md">Lab 2: Outside the training
+      data</a> - where the model stops being able to check itself</li>
+</ul>
+
+<h2>Repository</h2>
+<ul>
+  <li><a href="../readme.md">readme.md</a> - the full project readme</li>
+  <li><a href="../plans/">plans/</a> - technical planning documents</li>
+  <li><a href="../didactic/">didactic/</a> - the educational method</li>
+</ul>
+
+<footer>
+<p>
+Educational and research micro-LAB. Some content is for FUN and may be subject
+to copyright. Not intended to actually convince anyone of any Earth shape
+theory.
+</p>
+<p>GenAI ALWAYS hallucinates. Or at least tries to persuade you.</p>
+</footer>
+
+</div>
+</body>
+</html>
