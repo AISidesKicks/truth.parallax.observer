@@ -48,6 +48,9 @@ SOURCE_GROUPS = {
 MIN_CHUNK_CHARS = 400
 MAX_CHUNK_CHARS = 12000
 
+# room for the thinking tokens of a reasoning model, on top of the answer
+THINKING_BUDGET = 1500
+
 # docling leaves navigation breadcrumbs in the text
 JUNK_PATTERNS = [
     re.compile(r"^\[?(Share|Tweet|Facebook|Reddit|Print|Email|Bookmark)\]?\(javascript:void\(0\)\)$", re.I),
@@ -66,6 +69,12 @@ JUNK_PATTERNS = [
     re.compile(r"^Namespaces$"),
     re.compile(r"^Views$"),
     re.compile(r"^Help$"),
+    # the language switcher every Wikipedia article starts with
+    re.compile(r"^\d+ languages$"),
+    re.compile(r"^\d+ language$"),
+    re.compile(r"^Add languages$"),
+    re.compile(r"^\[Add links\]\([^)]*\)$"),
+    re.compile(r"^- \[[A-Za-z /-]+\]\(https://[a-z-]+\.wikipedia\.org/[^)]*\)$"),
 ]
 
 # footer widgets and navigation blocks that carry no knowledge
@@ -301,6 +310,29 @@ def slug_from_text(text: str, fallback: str) -> str:
     return slugify(words, fallback)
 
 
+def looks_like_navigation(text: str) -> bool:
+    """True for Wikipedia navigation boxes and project lists.
+
+    Docling pulls those in as well, and they carry no knowledge at all.
+    The bar is high on purpose: a chunk with a few wiki links in it is still
+    good material.
+    """
+    lowered = text.lower()
+    if "sister projects" in lowered[:300]:
+        return True
+
+    words = text.split()
+    if not words:
+        return False
+
+    internal = re.findall(r"\]\(/wiki/(?:template|special|wikipedia):", lowered)
+    if len(internal) > 8 and len(internal) / max(len(words), 1) > 0.15:
+        return True
+
+    links = re.findall(r"\[([^\]]*)\]\([^)]*\)", text)
+    return bool(len(links) > 20 and len(links) / max(len(words), 1) > 0.6)
+
+
 def chunk_file(path: Path, target: str, category: str, seen: set[str]) -> list[Chunk]:
     """Chunk one source file into knowledge entries.
 
@@ -322,6 +354,8 @@ def chunk_file(path: Path, target: str, category: str, seen: set[str]) -> list[C
     for heading, path_parts, text in split_headings(body):
         text = text.strip()
         if len(text) < MIN_CHUNK_CHARS:
+            continue
+        if looks_like_navigation(text):
             continue
 
         parts = split_long(text) if len(text) > MAX_CHUNK_CHARS else [text]
@@ -360,13 +394,27 @@ SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 
 
 def split_long(text: str) -> list[str]:
-    """Break an oversized block on sentence boundaries."""
+    """Break an oversized block into parts of at most MAX_CHUNK_CHARS."""
+    lines = text.splitlines()
+    table_rows = [line for line in lines if line.lstrip().startswith("|")]
+
+    # a markdown table splits on rows, the words inside a row do not separate
+    if table_rows and len(table_rows) > len(lines) * 0.6:
+        return split_table(text, lines)
+
     sentences = SENTENCE_END.split(text)
     parts: list[str] = []
     current: list[str] = []
     size = 0
 
     for sentence in sentences:
+        if len(sentence) > MAX_CHUNK_CHARS:
+            if current:
+                parts.append(" ".join(current))
+                current = []
+                size = 0
+            parts.extend(split_words(sentence))
+            continue
         if size + len(sentence) > MAX_CHUNK_CHARS and current:
             parts.append(" ".join(current))
             current = []
@@ -376,6 +424,76 @@ def split_long(text: str) -> list[str]:
 
     if current:
         parts.append(" ".join(current))
+
+    return parts
+
+
+def split_words(text: str) -> list[str]:
+    """Cut a run of text that has no sentence or word boundaries."""
+    words = text.split()
+    parts: list[str] = []
+    piece: list[str] = []
+    size = 0
+
+    for word in words:
+        if len(word) > MAX_CHUNK_CHARS:
+            # one unbroken run, cut it on character boundaries
+            if piece:
+                parts.append(" ".join(piece))
+                piece = []
+                size = 0
+            for start in range(0, len(word), MAX_CHUNK_CHARS):
+                parts.append(word[start : start + MAX_CHUNK_CHARS])
+            continue
+
+        if size + len(word) > MAX_CHUNK_CHARS and piece:
+            parts.append(" ".join(piece))
+            piece = []
+            size = 0
+        piece.append(word)
+        size += len(word) + 1
+
+    if piece:
+        parts.append(" ".join(piece))
+
+    return parts
+
+
+def cut_long_line(line: str) -> list[str]:
+    """Cut an oversized line, preferring the table cell boundary."""
+    if len(line) <= MAX_CHUNK_CHARS:
+        return [line]
+
+    pieces: list[str] = []
+    rest = line
+    while len(rest) > MAX_CHUNK_CHARS:
+        cut = rest.rfind("|", 0, MAX_CHUNK_CHARS)
+        if cut <= 0:
+            cut = MAX_CHUNK_CHARS
+        pieces.append(rest[:cut])
+        rest = rest[cut:]
+    if rest:
+        pieces.append(rest)
+    return pieces
+
+
+def split_table(text: str, lines: list[str]) -> list[str]:
+    """Split a markdown table into groups of rows."""
+    parts: list[str] = []
+    current: list[str] = []
+    size = 0
+
+    for line in lines:
+        for piece in cut_long_line(line):
+            if size + len(piece) > MAX_CHUNK_CHARS and current:
+                parts.append("\n".join(current))
+                current = []
+                size = 0
+            current.append(piece)
+            size += len(piece) + 1
+
+    if current:
+        parts.append("\n".join(current))
 
     return parts
 
@@ -457,6 +575,9 @@ Requirements:
 ## Related Concepts
 - 2 to 3 connected ideas
 
+Write the summary itself. Do not describe the summary, do not list what it
+would contain, do not mention that the text has headers or sections.
+
 Text:
 {content}
 
@@ -483,26 +604,59 @@ async def summarize(
 
     async with httpx.AsyncClient(timeout=600.0) as client:
 
-        async def call(prompt: str, max_tokens: int, retries: int = 2) -> str:
-            response = await client.post(
-                f"{endpoint.rstrip('/')}/chat/completions",
-                json={
-                    "model": model,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": max_tokens,
-                    "temperature": 0.3,
-                    "stream": False,
-                },
+        async def call(
+            prompt: str,
+            max_tokens: int,
+            min_chars: int = 0,
+            marker: str = "",
+            retries: int = 2,
+        ) -> str:
+            """One chat call, with a bigger budget if the answer looks cut off.
+
+            Granite and LFM answer in two passes. The thinking tokens land in
+            reasoning_content and only the final answer lands in content. If
+            the thinking eats the budget the answer comes back empty or
+            truncated, so we retry with more room.
+            """
+            budget = max_tokens
+            best = ""
+
+            for _ in range(retries + 1):
+                response = await client.post(
+                    f"{endpoint.rstrip('/')}/chat/completions",
+                    json={
+                        "model": model,
+                        "messages": [{"role": "user", "content": prompt}],
+                        "max_tokens": budget + THINKING_BUDGET,
+                        "temperature": 0.3,
+                        "stream": False,
+                    },
+                )
+                response.raise_for_status()
+                payload = response.json()
+                message = payload["choices"][0]["message"]
+                content = (message.get("content") or "").strip()
+                if not content:
+                    content = (message.get("reasoning_content") or "").strip()
+
+                if len(content) > len(best):
+                    best = content
+
+                if not content:
+                    budget = budget * 2
+                    continue
+                if len(content) >= min_chars and (not marker or marker in content):
+                    return content
+
+                budget = budget * 2
+
+            # no answer had the expected shape, but a long one is still usable
+            if len(best) >= min_chars:
+                return best
+
+            raise RuntimeError(
+                f"no usable answer after {retries + 1} tries: {len(best)} chars"
             )
-            response.raise_for_status()
-            payload = response.json()
-            message = payload["choices"][0]["message"]
-            content = (message.get("content") or "").strip()
-            if not content:
-                content = (message.get("reasoning_content") or "").strip()
-            if not content:
-                raise RuntimeError("empty response")
-            return content
 
         async def handle(chunk: Chunk) -> None:
             nonlocal done, failed
@@ -515,8 +669,8 @@ async def summarize(
                     resume
                     and abstract_path.exists()
                     and overview_path.exists()
-                    and abstract_path.stat().st_size > 20
-                    and overview_path.stat().st_size > 20
+                    and abstract_path.stat().st_size > 200
+                    and overview_path.stat().st_size > 500
                 ):
                     done += 1
                     return
@@ -526,8 +680,13 @@ async def summarize(
                 for attempt in range(retries + 1):
                     try:
                         l0, l1 = await asyncio.gather(
-                            call(L0_PROMPT.format(content=body), 1500),
-                            call(L1_PROMPT.format(content=body), 3000),
+                            call(L0_PROMPT.format(content=body), 1500, min_chars=150),
+                            call(
+                                L1_PROMPT.format(content=body),
+                                3000,
+                                min_chars=400,
+                                marker="## Summary",
+                            ),
                         )
                         abstract_path.write_text(l0)
                         overview_path.write_text(l1)
