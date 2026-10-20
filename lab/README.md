@@ -3,20 +3,16 @@
 Each lab is one experiment. The instructions say what to set up, what to do,
 and what to write down. You do not need to code anything.
 
-## The rules
-
-1. Write down every claim the agent makes that you cannot verify yourself.
-2. Write down every fact it cites, with the source. The UI shows the URIs it
-   pulled, so you can check whether it cited what it actually read.
-3. Keep the raw chat log. The interesting part is what it said when it was
-   wrong, not the polished version afterwards.
+The lab pages live in [`docs/lab/`](../docs/lab/), which is what the site at
+[truth.parallax.observer](https://truth.parallax.observer) publishes.
 
 ## The labs
 
 | Lab | What it is |
 |-----|------------|
-| [01 - Three truths](01-three-truths.md) | The core experiment. One question, three bodies of knowledge. |
-| [02 - Outside the training data](02-outside-training.md) | Where the model stops being able to check itself, and what it does instead. |
+| [01 - Three truths](docs/lab/01-three-truths.md) | The core experiment. One question, three bodies of knowledge. |
+| [02 - Outside the training data](docs/lab/02-outside-training.md) | Where the model stops being able to check itself, and what it does instead. |
+| [Lab index](docs/lab/README.md) | How the labs are organised |
 
 ## Before you start
 
@@ -27,7 +23,7 @@ docker/up.sh
 docker/status.sh
 ```
 
-You want all five services up. The app is at `http://localhost:8668`, the
+You want all four services up. The app is at `http://localhost:8668`, the
 memory server at `http://localhost:1933`, Phoenix at `http://localhost:6006`.
 
 ## The corpus
