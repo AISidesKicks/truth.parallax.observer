@@ -31,9 +31,9 @@ claim it makes is on the record.
 ## What is in the box
 
 - **Persuasive AI agent** - Granite models served by llama.cpp, CUDA
-- **Three (soon four) bodies of world knowledge** - one flat Earth corpus
-  with Victorian, biblical and Vedic sources, one scientific corpus, one
-  Discworld corpus, one Norse corpus
+- **Four bodies of world knowledge** - one flat Earth corpus with Victorian,
+  biblical and Vedic sources, one scientific corpus, one Discworld corpus,
+  one Norse corpus. 456 source grounded entries and 454 ammunition entries.
 - **Two tiers of knowledge** - `knowledge` holds the source text verbatim and
   can be cited, `enrichment` holds the ammunition: catchphrases, quotes and
   misleading claims

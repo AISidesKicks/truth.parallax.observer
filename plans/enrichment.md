@@ -170,15 +170,15 @@ dataset/flat-earth/victorian/one-hundred-proofs.md
        .metadata.yaml  source_url, heading path, word count
 ```
 
-Result: 458 entries, about 220k words, split over six folders.
+Result: 456 entries, about 220k words, split over six folders.
 
 | Folder | Entries |
 |--------|---------|
 | `flat-earth/biblical` | 77 |
 | `flat-earth/vedic` | 74 |
 | `flat-earth/victorian` | 57 |
-| `spherical-earth/scientific` | 87 |
-| `discworld/fictional` | 78 |
+| `spherical-earth/scientific` | 86 |
+| `discworld/fictional` | 77 |
 | `norse/fictional` | 85 |
 
 Four things the chunker had to deal with:
@@ -272,7 +272,7 @@ plan. Half a feature is worse than none.
 
 1. Frontmatter fix and stray directory cleanup. Done.
 2. Chunker for the raw sources, into `facts/knowledge/`. Done.
-3. Summary generation for the knowledge tier. 458 entries, two summaries
+3. Summary generation for the knowledge tier. 456 entries, two summaries
    each, roughly 900 calls. About an hour at concurrency 2.
 4. Prune the stale wisdoms. Done.
 5. Regenerate the catchphrase and quote tiers, plus the two new quote

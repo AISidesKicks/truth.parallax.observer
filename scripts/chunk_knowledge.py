@@ -330,7 +330,16 @@ def looks_like_navigation(text: str) -> bool:
         return True
 
     links = re.findall(r"\[([^\]]*)\]\([^)]*\)", text)
-    return bool(len(links) > 20 and len(links) / max(len(words), 1) > 0.6)
+    link_heavy = bool(len(links) > 20 and len(links) / max(len(words), 1) > 0.6)
+
+    # a citation reference or a Commons list, nothing to learn from
+    references = re.findall(r"\[\d+\]", text)
+    reference_heavy = bool(
+        len(references) > 3 and len(references) / max(len(words), 1) > 0.2
+    )
+    commons = "wikimedia commons has media related to" in lowered[:200]
+
+    return link_heavy or reference_heavy or commons
 
 
 def chunk_file(path: Path, target: str, category: str, seen: set[str]) -> list[Chunk]:
