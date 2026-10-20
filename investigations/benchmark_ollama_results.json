@@ -1,0 +1,550 @@
+{
+  "engine": "ollama",
+  "timestamp": "2026-02-19 21:18:11",
+  "config": {
+    "num_requests": 20,
+    "max_tokens": 128,
+    "temperature": 0.7,
+    "num_ctx": 4096,
+    "ollama_host": "http://localhost:11433"
+  },
+  "results": [
+    {
+      "model_id": "granite4:micro-h",
+      "model_name": "Granite-4.0-Micro-H",
+      "engine": "ollama",
+      "model_size_gb": 2.0,
+      "initial_memory_gib": 0.0,
+      "load_time_sec": 1.8246300220489502,
+      "memory_after_load_gib": 0.0,
+      "peak_memory_gib": 0.0,
+      "requests": [
+        {
+          "request_num": 1,
+          "latency_ms": 7785.978555679321,
+          "tokens": 128,
+          "tokens_per_sec": 16.439808957171227,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 2,
+          "latency_ms": 1133.1968307495117,
+          "tokens": 128,
+          "tokens_per_sec": 112.95478113483522,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 3,
+          "latency_ms": 1137.1409893035889,
+          "tokens": 128,
+          "tokens_per_sec": 112.56299896320695,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 4,
+          "latency_ms": 1140.2478218078613,
+          "tokens": 128,
+          "tokens_per_sec": 112.25629863256934,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 5,
+          "latency_ms": 779.503583908081,
+          "tokens": 84,
+          "tokens_per_sec": 107.760890051155,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 6,
+          "latency_ms": 1132.2803497314453,
+          "tokens": 128,
+          "tokens_per_sec": 113.0462080617747,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 7,
+          "latency_ms": 1135.9970569610596,
+          "tokens": 128,
+          "tokens_per_sec": 112.67634824901458,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 8,
+          "latency_ms": 1134.8328590393066,
+          "tokens": 128,
+          "tokens_per_sec": 112.79194022312542,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 9,
+          "latency_ms": 1137.1002197265625,
+          "tokens": 128,
+          "tokens_per_sec": 112.56703479556099,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 10,
+          "latency_ms": 1139.6064758300781,
+          "tokens": 128,
+          "tokens_per_sec": 112.31947405946957,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 11,
+          "latency_ms": 1136.1844539642334,
+          "tokens": 128,
+          "tokens_per_sec": 112.65776393383868,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 12,
+          "latency_ms": 1130.2385330200195,
+          "tokens": 128,
+          "tokens_per_sec": 113.25043011759782,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 13,
+          "latency_ms": 1133.6207389831543,
+          "tokens": 128,
+          "tokens_per_sec": 112.91254261527946,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 14,
+          "latency_ms": 1132.3583126068115,
+          "tokens": 128,
+          "tokens_per_sec": 113.03842482979626,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 15,
+          "latency_ms": 1130.462884902954,
+          "tokens": 128,
+          "tokens_per_sec": 113.2279544153175,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 16,
+          "latency_ms": 1142.1945095062256,
+          "tokens": 128,
+          "tokens_per_sec": 112.0649757415966,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 17,
+          "latency_ms": 1137.8767490386963,
+          "tokens": 128,
+          "tokens_per_sec": 112.49021487444686,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 18,
+          "latency_ms": 1145.2901363372803,
+          "tokens": 128,
+          "tokens_per_sec": 111.76207315410325,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 19,
+          "latency_ms": 1138.1840705871582,
+          "tokens": 128,
+          "tokens_per_sec": 112.45984134531797,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 20,
+          "latency_ms": 1143.2170867919922,
+          "tokens": 128,
+          "tokens_per_sec": 111.96473660062566,
+          "memory_gib": 0.0,
+          "success": true
+        }
+      ],
+      "total_tokens": 2516,
+      "total_time_sec": 29.025512218475342,
+      "avg_tokens_per_sec": 107.56023703779015,
+      "avg_latency_ms": 1451.275610923767,
+      "requests_completed": 20,
+      "success": true,
+      "error": null
+    },
+    {
+      "model_id": "granite4:tiny-h",
+      "model_name": "Granite-4.0-Tiny-H",
+      "engine": "ollama",
+      "model_size_gb": 4.0,
+      "initial_memory_gib": 0.0,
+      "load_time_sec": 2.584630012512207,
+      "memory_after_load_gib": 0.0,
+      "peak_memory_gib": 0.0,
+      "requests": [
+        {
+          "request_num": 1,
+          "latency_ms": 3805.727243423462,
+          "tokens": 128,
+          "tokens_per_sec": 33.633519118111295,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 2,
+          "latency_ms": 978.7817001342773,
+          "tokens": 128,
+          "tokens_per_sec": 130.77481933146063,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 3,
+          "latency_ms": 978.1289100646973,
+          "tokens": 128,
+          "tokens_per_sec": 130.86209668573602,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 4,
+          "latency_ms": 980.9045791625977,
+          "tokens": 128,
+          "tokens_per_sec": 130.49179575578506,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 5,
+          "latency_ms": 977.3294925689697,
+          "tokens": 128,
+          "tokens_per_sec": 130.96913678880625,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 6,
+          "latency_ms": 1012.7029418945312,
+          "tokens": 128,
+          "tokens_per_sec": 126.39441903915261,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 7,
+          "latency_ms": 981.3730716705322,
+          "tokens": 128,
+          "tokens_per_sec": 130.4295009665522,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 8,
+          "latency_ms": 999.6232986450195,
+          "tokens": 128,
+          "tokens_per_sec": 128.04823594398295,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 9,
+          "latency_ms": 995.2495098114014,
+          "tokens": 128,
+          "tokens_per_sec": 128.6109651279867,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 10,
+          "latency_ms": 976.1021137237549,
+          "tokens": 128,
+          "tokens_per_sec": 131.13382114468516,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 11,
+          "latency_ms": 975.5754470825195,
+          "tokens": 128,
+          "tokens_per_sec": 131.20461403860347,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 12,
+          "latency_ms": 991.6837215423584,
+          "tokens": 128,
+          "tokens_per_sec": 129.0734104225514,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 13,
+          "latency_ms": 975.0242233276367,
+          "tokens": 128,
+          "tokens_per_sec": 131.27878973422003,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 14,
+          "latency_ms": 972.5842475891113,
+          "tokens": 128,
+          "tokens_per_sec": 131.60813607385947,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 15,
+          "latency_ms": 1004.4088363647461,
+          "tokens": 128,
+          "tokens_per_sec": 127.43814606736238,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 16,
+          "latency_ms": 715.6271934509277,
+          "tokens": 89,
+          "tokens_per_sec": 124.36643103348328,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 17,
+          "latency_ms": 986.5012168884277,
+          "tokens": 128,
+          "tokens_per_sec": 129.7514871838994,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 18,
+          "latency_ms": 980.8509349822998,
+          "tokens": 128,
+          "tokens_per_sec": 130.49893254402602,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 19,
+          "latency_ms": 996.3316917419434,
+          "tokens": 128,
+          "tokens_per_sec": 128.4712722288401,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 20,
+          "latency_ms": 972.2840785980225,
+          "tokens": 128,
+          "tokens_per_sec": 131.64876687538543,
+          "memory_gib": 0.0,
+          "success": true
+        }
+      ],
+      "total_tokens": 2521,
+      "total_time_sec": 22.256794452667236,
+      "avg_tokens_per_sec": 124.8344148052245,
+      "avg_latency_ms": 1112.8397226333618,
+      "requests_completed": 20,
+      "success": true,
+      "error": null
+    },
+    {
+      "model_id": "granite3.3:2b",
+      "model_name": "Granite-3.3-2B-Reasoning",
+      "engine": "ollama",
+      "model_size_gb": 1.5,
+      "initial_memory_gib": 0.0,
+      "load_time_sec": 1.3878638744354248,
+      "memory_after_load_gib": 0.0,
+      "peak_memory_gib": 0.0,
+      "requests": [
+        {
+          "request_num": 1,
+          "latency_ms": 2663.26642036438,
+          "tokens": 128,
+          "tokens_per_sec": 48.06128257438377,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 2,
+          "latency_ms": 10301.473617553711,
+          "tokens": 128,
+          "tokens_per_sec": 12.425406767230662,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 3,
+          "latency_ms": 773.5741138458252,
+          "tokens": 128,
+          "tokens_per_sec": 165.46572294624463,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 4,
+          "latency_ms": 763.4882926940918,
+          "tokens": 128,
+          "tokens_per_sec": 167.65155566214554,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 5,
+          "latency_ms": 768.2240009307861,
+          "tokens": 128,
+          "tokens_per_sec": 166.61806952778645,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 6,
+          "latency_ms": 756.0975551605225,
+          "tokens": 128,
+          "tokens_per_sec": 169.29032388264383,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 7,
+          "latency_ms": 757.7159404754639,
+          "tokens": 128,
+          "tokens_per_sec": 168.92874118456646,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 8,
+          "latency_ms": 754.9140453338623,
+          "tokens": 128,
+          "tokens_per_sec": 169.55572729262406,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 9,
+          "latency_ms": 761.2226009368896,
+          "tokens": 128,
+          "tokens_per_sec": 168.15055128744402,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 10,
+          "latency_ms": 764.7714614868164,
+          "tokens": 128,
+          "tokens_per_sec": 167.37026215799312,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 11,
+          "latency_ms": 759.1080665588379,
+          "tokens": 128,
+          "tokens_per_sec": 168.61894325566203,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 12,
+          "latency_ms": 754.7473907470703,
+          "tokens": 128,
+          "tokens_per_sec": 169.5931666266537,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 13,
+          "latency_ms": 749.6376037597656,
+          "tokens": 128,
+          "tokens_per_sec": 170.74917181051634,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 14,
+          "latency_ms": 759.6774101257324,
+          "tokens": 128,
+          "tokens_per_sec": 168.49257104909177,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 15,
+          "latency_ms": 764.7480964660645,
+          "tokens": 128,
+          "tokens_per_sec": 167.37537574986297,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 16,
+          "latency_ms": 744.748592376709,
+          "tokens": 128,
+          "tokens_per_sec": 171.8700797963442,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 17,
+          "latency_ms": 753.1754970550537,
+          "tokens": 128,
+          "tokens_per_sec": 169.94711126488463,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 18,
+          "latency_ms": 752.7077198028564,
+          "tokens": 128,
+          "tokens_per_sec": 170.05272648661662,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 19,
+          "latency_ms": 772.0563411712646,
+          "tokens": 128,
+          "tokens_per_sec": 165.7910092491629,
+          "memory_gib": 0.0,
+          "success": true
+        },
+        {
+          "request_num": 20,
+          "latency_ms": 757.5216293334961,
+          "tokens": 128,
+          "tokens_per_sec": 168.97207293291487,
+          "memory_gib": 0.0,
+          "success": true
+        }
+      ],
+      "total_tokens": 2560,
+      "total_time_sec": 26.6328763961792,
+      "avg_tokens_per_sec": 154.74899357523864,
+      "avg_latency_ms": 1331.64381980896,
+      "requests_completed": 20,
+      "success": true,
+      "error": null
+    }
+  ]
+}
