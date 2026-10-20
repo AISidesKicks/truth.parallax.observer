@@ -114,12 +114,33 @@ busy.
 
 ## Open items
 
-1. `src/memory/viking_client.py` still hand rolls cosine similarity over
-   `.embedding.json` files. Rewrite it on `openviking-sdk`.
-2. `scripts/migrate_to_viking.py` does not exist yet. It seeds the workspace
-   and calls `reindex`.
-3. The app does not exist yet. `src/main.py`, `src/agentic/`, `src/gui/`.
-4. `plans/bdd-app.md` is empty. Write the scenarios before the app code.
-5. `readme.md` and `docs/index.html` are empty.
-6. The repo is not under version control yet.
-7. `src/dev.sh` still points at a conda environment. It should call pixi.
+Done:
+
+- [x] pixi environments and tasks
+- [x] llama.cpp router serving both models
+- [x] OpenViking 0.5.1.1 server, config validated against the real schema
+- [x] the memory client rewritten on the SDK
+- [x] the corpus seeded into the workspace by `scripts/migrate_to_viking.py`
+- [x] the knowledge tier built from the raw sources
+- [x] the seed parser fixed, the expansion ported to llama.cpp
+- [x] `readme.md`, `docs/index.html` and the lab pages
+- [x] the repo is under version control
+
+Still open:
+
+1. **The app does not exist.** `src/main.py`, `src/agentic/`, `src/gui/`.
+   The multi-agent debate system is described in `plans/agentic.md`.
+2. **`plans/bdd-app.md` is empty.** Write the scenarios before the app code.
+   The whole project is built BDD first and that has been skipped so far.
+3. **No tests.** The `pytest` task exists and finds nothing.
+4. **The corpus has not been seeded into a live OpenViking server yet.**
+   `scripts/migrate_to_viking.py --reindex` needs the GPU free, because the
+   server embeds through the llama.cpp server.
+5. **The catchphrase and quote tiers need regenerating.** The old ones were
+   three quarters metadata artifacts, see `plans/enrichment.md`.
+6. **The knowledge tier is thin.** 347 entries over 4.7 MB of sources, and
+   weighted towards the control cases. The interesting worldviews are Norse
+   and Discworld, and they have the least material.
+7. **`dataset/images/` is nearly empty.** Decide whether the image tier is
+   real or it goes.
+
