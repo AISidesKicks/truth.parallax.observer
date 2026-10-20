@@ -1,0 +1,236 @@
+# parallax.observer - local stack
+# Usage: docker compose --profile <profile> up -d
+# Profiles: llm, embed, viking, phoenix, app, dev
+#
+# Every container, volume and network carries the prlx- prefix so it never
+# collides with the other projects sharing this Docker host.
+
+name: prlx
+
+services:
+  prlx-llm:
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda13
+    container_name: prlx-llm
+    ports:
+      - "${LLM_PORT:-11433}:8080"
+    volumes:
+      - ../.models/llama:/models:ro
+    environment:
+      LLAMA_ARG_HOST: "0.0.0.0"
+      LLAMA_ARG_PORT: "8080"
+      LLAMA_ARG_MODEL: "/models/${LLM_MODEL_FILE:-granite-4.0-h-tiny-Q4_K_M.gguf}"
+      LLAMA_ARG_ALIAS: "${LLM_MODEL_ALIAS:-granite-4.0-h-tiny}"
+      LLAMA_ARG_CTX_SIZE: "${LLM_CTX_SIZE:-32768}"
+      LLAMA_ARG_N_GPU_LAYERS: "${LLM_N_GPU_LAYERS:-99}"
+      LLAMA_ARG_N_PARALLEL: "${LLM_N_PARALLEL:-2}"
+      LLAMA_ARG_BATCH: "${LLM_BATCH:-2048}"
+      LLAMA_ARG_UBATCH: "${LLM_UBATCH:-512}"
+      LLAMA_ARG_JINJA: "1"
+      LLAMA_ARG_FLASH_ATTN: "1"
+      LLAMA_ARG_CACHE_TYPE_K: "${LLM_CACHE_TYPE:-q8_0}"
+      LLAMA_ARG_CACHE_TYPE_V: "${LLM_CACHE_TYPE:-q8_0}"
+      LLAMA_ARG_THINK: "${LLM_THINK:-1}"
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 120s
+    restart: unless-stopped
+    profiles:
+      - llm
+    networks:
+      - prlx-lab
+
+  prlx-embed:
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda13
+    container_name: prlx-embed
+    ports:
+      - "${EMBED_PORT:-7997}:8080"
+    volumes:
+      - ../.models/llama:/models:ro
+    environment:
+      LLAMA_ARG_HOST: "0.0.0.0"
+      LLAMA_ARG_PORT: "8080"
+      LLAMA_ARG_MODEL: "/models/${EMBED_MODEL_FILE:-embeddinggemma-2-Q8_0.gguf}"
+      LLAMA_ARG_ALIAS: "${EMBED_MODEL_ALIAS:-embeddinggemma-2}"
+      LLAMA_ARG_EMBEDDINGS: "1"
+      LLAMA_ARG_POOLING: "${EMBED_POOLING:-last}"
+      LLAMA_ARG_CTX_SIZE: "${EMBED_CTX_SIZE:-2048}"
+      LLAMA_ARG_N_GPU_LAYERS: "${EMBED_N_GPU_LAYERS:-99}"
+      # embeddings need n_batch == n_ubatch, otherwise the server lowers both
+      LLAMA_ARG_BATCH: "${EMBED_BATCH:-512}"
+      LLAMA_ARG_UBATCH: "${EMBED_BATCH:-512}"
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    restart: unless-stopped
+    profiles:
+      - embed
+    networks:
+      - prlx-lab
+
+  prlx-viking:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.viking
+    container_name: prlx-viking
+    ports:
+      - "${VIKING_PORT:-1933}:1933"
+    volumes:
+      - ../memory/openviking:/app/viking_data
+      - ../config/openviking.conf:/app/openviking.conf:ro
+      - ../facts:/app/facts:ro
+    environment:
+      OPENVIKING_CONFIG_FILE: /app/openviking.conf
+      VIKING_WORKSPACE: /app/viking_data
+      VIKING_EMBEDDING_BASE: http://prlx-embed:8080/v1
+      VIKING_VLM_BASE: http://prlx-llm:8080/v1
+      VIKING_EMBEDDING_MODEL: "${EMBED_MODEL_ALIAS:-embeddinggemma-2}"
+      VIKING_VLM_MODEL: "${LLM_MODEL_ALIAS:-granite-4.0-h-tiny}"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:1933/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    restart: unless-stopped
+    profiles:
+      - viking
+    networks:
+      - prlx-lab
+    depends_on:
+      prlx-embed:
+        condition: service_healthy
+        required: false
+      prlx-llm:
+        condition: service_healthy
+        required: false
+
+  prlx-phoenix:
+    image: arizephoenix/phoenix:latest
+    container_name: prlx-phoenix
+    ports:
+      - "6006:6006"
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - prlx-phoenix-data:/root/.phoenix
+    environment:
+      - PHOENIX_HOST=0.0.0.0
+      - PHOENIX_PORT=6006
+    restart: on-failure:0
+    profiles:
+      - phoenix
+    networks:
+      - prlx-lab
+
+  prlx-app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.app
+    container_name: prlx-app
+    ports:
+      - "8668:8668"
+    volumes:
+      - ../.logs/app:/app/logs
+      - ../memory/openviking:/app/viking_data
+      - ../facts:/app/facts:ro
+      - ../config:/app/config:ro
+    environment:
+      - LLM_API_BASE=http://prlx-llm:8080/v1
+      - LLM_MODEL=${LLM_MODEL_ALIAS:-granite-4.0-h-tiny}
+      - EMBEDDING_API_BASE=http://prlx-embed:8080/v1
+      - EMBEDDING_MODEL=${EMBED_MODEL_ALIAS:-embeddinggemma-2}
+      - EMBEDDING_DIMENSION=${EMBEDDING_DIMENSION:-768}
+      - OPENVIKING_URL=http://prlx-viking:1933
+      - OPENVIKING_WORKSPACE=/app/viking_data
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://prlx-phoenix:4317
+      - PHOENIX_ENABLED=${PHOENIX_ENABLED:-true}
+      - HF_TOKEN=${HF_TOKEN:-}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - DEBUG=${DEBUG:-false}
+    restart: unless-stopped
+    profiles:
+      - app
+    networks:
+      - prlx-lab
+    depends_on:
+      prlx-viking:
+        condition: service_healthy
+        required: false
+      prlx-llm:
+        condition: service_healthy
+        required: false
+
+  prlx-dev:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.app
+    container_name: prlx-dev
+    ports:
+      - "8668:8668"
+    volumes:
+      - ../src:/app/src
+      - ../scripts:/app/scripts
+      - ../memory/openviking:/app/viking_data
+      - ../facts:/app/facts:ro
+      - ../config:/app/config:ro
+      - ../.logs/app:/app/logs
+      - ../.env:/app/.env:ro
+    environment:
+      - LLM_API_BASE=http://prlx-llm:8080/v1
+      - LLM_MODEL=${LLM_MODEL_ALIAS:-granite-4.0-h-tiny}
+      - EMBEDDING_API_BASE=http://prlx-embed:8080/v1
+      - EMBEDDING_MODEL=${EMBED_MODEL_ALIAS:-embeddinggemma-2}
+      - EMBEDDING_DIMENSION=${EMBEDDING_DIMENSION:-768}
+      - OPENVIKING_URL=http://prlx-viking:1933
+      - OPENVIKING_WORKSPACE=/app/viking_data
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    profiles:
+      - dev
+    networks:
+      - prlx-lab
+    depends_on:
+      prlx-viking:
+        condition: service_healthy
+        required: false
+
+volumes:
+  prlx-phoenix-data:
+
+networks:
+  prlx-lab:
+    name: prlx-lab

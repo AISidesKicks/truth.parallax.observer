@@ -1,0 +1,34 @@
+# parallax.observer - OpenViking context server
+#
+# CPU only. The heavy lifting (embeddings, LLM summaries) is delegated to the
+# llama.cpp services over the prlx-lab network.
+#
+# The sdist needs Rust to build the `ov` CLI, so we pin the manylinux wheel
+# that ships the same version.
+
+FROM python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir "openviking==0.5.1.1" && \
+    openviking-server --version
+
+RUN mkdir -p /app/viking_data /app/facts
+
+COPY config/openviking.conf /app/openviking.conf
+
+EXPOSE 1933
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=20 \
+    CMD curl -fsS http://localhost:1933/health || exit 1
+
+CMD ["openviking-server", "--host", "0.0.0.0", "--port", "1933", \
+     "--config", "/app/openviking.conf"]
