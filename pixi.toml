@@ -65,3 +65,6 @@ rapidfuzz = ">=3.0"
 default = ["core"]
 experiment = ["core", "experiment"]
 benchmarks = ["core", "benchmarks"]
+
+[pypi-dependencies]
+markdownify = ">=1.2.3, <2"
