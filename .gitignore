@@ -55,20 +55,21 @@ models/
 *.pth
 *.ckpt
 
-# Data directories
-data/
-dataset/
-facts/
-embeddings/
-viking_data/
-memory/
-.models/
-.data/
+# Data directories, anchored to the project root so they cannot swallow
+# source folders with the same name, like src/memory/
+/data/
+/dataset/
+/facts/
+/embeddings/
+/viking_data/
+/memory/
+/.models/
+/.data/
 
 # Logs
 *.log
-logs/
-.logs/
+/logs/
+/.logs/
 
 # OS
 .DS_Store
@@ -115,9 +116,9 @@ pip-delete-this-directory.txt
 
 # Local development
 *.local
-scratch/
-tmp/
-temp/
+/scratch/
+/tmp/
+/temp/
 telemetry-id
 
 # Docker
