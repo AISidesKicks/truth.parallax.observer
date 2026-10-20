@@ -62,8 +62,8 @@ The goal is a **persuasion playground**, not a Wikipedia clone.
 |-----------|------------|
 | Backend | Python 3.12 |
 | Environment | pixi (`prlx` workspace) |
-| LLM runtime | llama.cpp server, Docker, CUDA |
-| Embeddings | llama.cpp server, EmbeddingGemma 2 |
+| LLM runtime | llama.cpp router server, Docker, CUDA |
+| Embeddings | same llama.cpp server, EmbeddingGemma 2 |
 | Quantization | GGUF, Q4_K_M for chat, Q8_0 for embeddings |
 | Memory | OpenViking 0.5 server + `openviking-sdk` |
 | Vector store | LanceDB, local backend |
@@ -79,15 +79,19 @@ The goal is a **persuasion playground**, not a Wikipedia clone.
 | Chat | granite-4.0-h-tiny | `ibm-granite/granite-4.0-h-tiny-GGUF` | 4231 MB (Q4_K_M) |
 | Embeddings | embeddinggemma-2 | `ggml-org/embeddinggemma-2-GGUF` | 310 MB (Q8_0) |
 
-Both run in the same llama.cpp image. EmbeddingGemma 2 is multimodal and
-outputs 768 dimensions with MRL truncation down to 128.
+Both live in one llama.cpp server. It runs in router mode, so the request
+body decides which model answers. That is one CUDA context instead of two,
+which matters on a 12 GB card shared with other projects. The presets are in
+[`config/llama-models.ini`](config/llama-models.ini).
+
+EmbeddingGemma 2 is multimodal and outputs 768 dimensions with MRL truncation
+down to 128.
 
 ### Ports
 
 | Service | Port | Container |
 |---------|------|-----------|
-| Chat | 11433 | `prlx-llm` |
-| Embeddings | 7997 | `prlx-embed` |
+| Chat and embeddings | 11433 | `prlx-llm` |
 | OpenViking | 1933 | `prlx-viking` |
 | Phoenix | 6006 | `prlx-phoenix` |
 | App | 8668 | `prlx-app` |

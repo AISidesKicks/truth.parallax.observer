@@ -18,6 +18,7 @@ import argparse
 import asyncio
 import json
 import logging
+import os
 import re
 import sys
 import time
@@ -41,21 +42,20 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-OLLAMA_URL = "http://localhost:11433/api/generate"
-OLLAMA_PS_URL = "http://localhost:11433/api/ps"
-OLLAMA_UNLOAD_URL = "http://localhost:11433/api/generate"
+# The model server speaks the OpenAI compatible API. llama.cpp serves it on
+# the same port the Ollama server used to keep.
+LLM_API_BASE = os.environ.get("LLM_API_BASE", "http://localhost:11433/v1")
+LLM_MODEL = os.environ.get("LLM_MODEL", "granite-4.0-h-tiny")
 CHECKPOINT_FILE = Path("facts/.checkpoint.json")
 
-MODELS = {
-    "extract": "granite3.3:2b",
-    "tier_l0": "granite4:tiny-h",    # MoE model for L0/L1
-    "tier_l1": "granite4:tiny-h",    # Same model for L0/L1
-    "tier_l2": "granite3.3:2b",      # Thinking model for rich L2 content
-}
+# Granite and LFM answer in two passes: the thinking tokens land in
+# reasoning_content and only the answer lands in content. The budget has to
+# cover both.
+THINKING_BUDGET = 1200
 
 MODEL_INFO = {
-    "granite3.3:2b": {"size_gb": 1.5, "type": "Thinking", "task": "L2"},
-    "granite4:tiny-h": {"size_gb": 5.6, "type": "MoE", "task": "L0/L1"},
+    "granite-4.0-h-tiny": {"size_gb": 4.2, "type": "Hybrid MoE", "task": "L0/L1/L2"},
+    "granite-3.3-2b": {"size_gb": 1.5, "type": "Thinking", "task": "L2"},
 }
 
 ENRICHMENT_DIR = Path("dataset/enrichment")
@@ -257,23 +257,9 @@ class GPUMonitor:
             return None
     
     def get_loaded_models(self) -> list[ModelMemory]:
-        """Get per-model VRAM from Ollama API."""
-        try:
-            response = httpx.get(OLLAMA_PS_URL, timeout=5)
-            data = response.json()
-            
-            models = []
-            for m in data.get("models", []):
-                models.append(ModelMemory(
-                    name=m["name"],
-                    size_vram_bytes=m.get("size_vram", m.get("size", 0)),
-                    context_length=m.get("context_length", 0),
-                    parameter_size=m.get("details", {}).get("parameter_size", "?"),
-                ))
-            return models
-        except Exception:
-            return []
-    
+        """llama.cpp serves one model per container, so there is nothing to list."""
+        return []
+
     def print_status(self) -> tuple[GPUStatus | None, list[ModelMemory]]:
         """Print combined GPU and model status."""
         gpu = self.get_gpu_status()
@@ -306,51 +292,22 @@ class GPUMonitor:
         return gpu, models
 
 
-async def unload_unused_models(keep_models: set[str]):
-    """Unload models not in the keep_models set."""
+async def warm_up_model() -> None:
+    """Send a tiny request so the server loads the model before the real work."""
     try:
-        response = httpx.get(OLLAMA_PS_URL, timeout=5)
-        data = response.json()
-        
-        for m in data.get("models", []):
-            model_name = m["name"]
-            # Check if model should be kept
-            should_keep = any(keep in model_name for keep in keep_models)
-            
-            if not should_keep:
-                logger.info(f"Unloading unused model: {model_name}")
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    await client.post(OLLAMA_UNLOAD_URL, json={
-                        "model": model_name,
-                        "keep_alive": 0,  # Unload immediately
-                    })
-    except Exception as e:
-        logger.warning(f"Failed to unload models: {e}")
-
-
-async def preload_models():
-    """Preload required models with a warm-up request."""
-    required_models = {MODELS["tier_l0"], MODELS["tier_l2"]}
-    
-    logger.info(f"Preloading models: {required_models}")
-    
-    for model in required_models:
-        try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                # Simple warm-up request
-                await client.post(OLLAMA_URL, json={
-                    "model": model,
-                    "prompt": "Ready",
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            await client.post(
+                f"{LLM_API_BASE.rstrip('/')}/chat/completions",
+                json={
+                    "model": LLM_MODEL,
+                    "messages": [{"role": "user", "content": "Ready"}],
+                    "max_tokens": 16,
                     "stream": False,
-                    "keep_alive": "10m",
-                    "options": {"num_predict": 1},
-                })
-                logger.info(f"  Loaded: {model}")
-        except Exception as e:
-            logger.warning(f"Failed to preload {model}: {e}")
-    
-    # Unload any models we don't need
-    await unload_unused_models(required_models)
+                },
+            )
+        logger.info("model warm: %s", LLM_MODEL)
+    except Exception as exc:
+        logger.warning("warm up failed: %s", exc)
 
 
 # Checkpoint functions
@@ -409,20 +366,25 @@ def estimate_tokens(text: str) -> int:
     return len(text) // 4
 
 
-async def call_ollama(prompt: str, model: str, max_tokens: int = 2000) -> str:
-    """Call Ollama API asynchronously."""
-    async with httpx.AsyncClient(timeout=120.0) as client:
-        response = await client.post(OLLAMA_URL, json={
-            "model": model,
-            "prompt": prompt,
-            "stream": False,
-            "options": {
-                "num_predict": max_tokens,
+async def call_llm(prompt: str, max_tokens: int = 2000) -> str:
+    """Call the OpenAI compatible chat endpoint."""
+    async with httpx.AsyncClient(timeout=600.0) as client:
+        response = await client.post(
+            f"{LLM_API_BASE.rstrip('/')}/chat/completions",
+            json={
+                "model": LLM_MODEL,
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": max_tokens + THINKING_BUDGET,
                 "temperature": 0.7,
-            }
-        })
+                "stream": False,
+            },
+        )
         response.raise_for_status()
-        return response.json()["response"].strip()
+        message = response.json()["choices"][0]["message"]
+        content = (message.get("content") or "").strip()
+        if not content:
+            content = (message.get("reasoning_content") or "").strip()
+        return content
 
 
 async def generate_tiers_parallel(content: str, target: str, category: str) -> dict[str, str]:
@@ -435,9 +397,9 @@ async def generate_tiers_parallel(content: str, target: str, category: str) -> d
     else:
         l2_prompt = L2_MISLEADING_FACTS_PROMPT.format(content=content, target=target)
     
-    l0_task = call_ollama(TIER_L0_PROMPT.format(content=content), MODELS["tier_l0"], max_tokens=300)
-    l1_task = call_ollama(TIER_L1_PROMPT.format(content=content), MODELS["tier_l1"], max_tokens=800)
-    l2_task = call_ollama(l2_prompt, MODELS["tier_l2"], max_tokens=2500)
+    l0_task = call_llm(TIER_L0_PROMPT.format(content=content), max_tokens=300)
+    l1_task = call_llm(TIER_L1_PROMPT.format(content=content), max_tokens=800)
+    l2_task = call_llm(l2_prompt, max_tokens=2500)
     
     l0, l1, l2 = await asyncio.gather(l0_task, l1_task, l2_task)
     return {"l0": l0, "l1": l1, "l2": l2}
@@ -485,7 +447,7 @@ def extract_fact_name(fact_text: str, index: int) -> str:
 def parse_enrichment_file(filepath: Path) -> tuple[list[str], dict]:
     """Parse enrichment file to extract individual wisdoms."""
     content = filepath.read_text()
-    
+
     # Extract YAML frontmatter
     frontmatter = {}
     if content.startswith("---"):
@@ -497,7 +459,7 @@ def parse_enrichment_file(filepath: Path) -> tuple[list[str], dict]:
                     key, value = line.split(':', 1)
                     frontmatter[key.strip()] = value.strip()
             content = content[match.end():].strip()
-    
+
     # Parse numbered facts (handles " 1. " and "1. " formats)
     facts = []
     # Pattern matches: optional leading spaces, number, period, space, then content
@@ -505,17 +467,38 @@ def parse_enrichment_file(filepath: Path) -> tuple[list[str], dict]:
         fact_text = match.group(1).strip()
         if fact_text and len(fact_text) > 10:
             facts.append(fact_text)
-    
-    # If no numbered facts, try line-by-line
-    if not facts:
-        for line in content.split('\n'):
-            line = line.strip()
-            if line and not line.startswith('#') and len(line) > 10:
-                # Remove markdown formatting
-                line = re.sub(r'[*_`]', '', line)
-                if line:
-                    facts.append(line)
-    
+
+    if facts:
+        return facts, frontmatter
+
+    # Blockquote style: the quotes are the facts, the rest is commentary
+    blockquotes = []
+    for line in content.split('\n'):
+        stripped = line.strip()
+        if not stripped.startswith('>'):
+            continue
+        quote = stripped.lstrip('>').strip()
+        quote = re.sub(r'^-\s*', '', quote)
+        quote = re.sub(r'[*_`]', '', quote).strip()
+        if len(quote) > 10:
+            blockquotes.append(quote)
+
+    if blockquotes:
+        return blockquotes, frontmatter
+
+    # If no numbered facts and no blockquotes, try line-by-line
+    for line in content.split('\n'):
+        line = line.strip()
+        if not line or line.startswith('#'):
+            continue
+        # skip the metadata lines: **Source:**, **URL:**, **Note:**
+        if line.startswith('**'):
+            continue
+        # Remove markdown formatting
+        line = re.sub(r'[*_`]', '', line)
+        if line:
+            facts.append(line)
+
     return facts, frontmatter
 
 
@@ -726,7 +709,7 @@ async def expand_with_options(
     print("\n" + "="*60)
     print("WISDOM EXPANSION PIPELINE")
     print("="*60)
-    print(f"  Models: {MODELS['tier_l0']} (L0/L1), {MODELS['tier_l2']} (L2)")
+    print(f"  Model: {LLM_MODEL} at {LLM_API_BASE}")
     if gpu_monitor:
         print("  GPU Monitor: ENABLED")
         print(f"  Temperature limit: {temp_limit}°C")
@@ -735,9 +718,8 @@ async def expand_with_options(
         print("  GPU Monitor: disabled")
     print(f"  Chunk size: {chunk_size}")
     print("="*60)
-    
-    # Preload required models and unload unused ones
-    await preload_models()
+
+    await warm_up_model()
     
     if monitor:
         monitor.print_status()

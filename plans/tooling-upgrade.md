@@ -20,7 +20,7 @@ Everything now runs locally on a single RTX 4070 (12 GB).
 | Piece | Before | After |
 |-------|--------|-------|
 | Chat | `ollama/ollama` + `granite4:tiny-h` | `ghcr.io/ggml-org/llama.cpp:server-cuda13` + `granite-4.0-h-tiny` |
-| Embeddings | `michaelf34/infinity` + `modernbert-embed-base` | same llama.cpp image + `embeddinggemma-2` |
+| Embeddings | `michaelf34/infinity` + `modernbert-embed-base` | same llama.cpp server + `embeddinggemma-2` |
 | Memory | OpenViking 0.3.x, hand rolled client | OpenViking 0.5.1.1 server + `openviking-sdk` |
 | Env | conda | pixi (`prlx` workspace) |
 
@@ -28,11 +28,23 @@ Port numbers stay put so the app config barely moves:
 
 | Service | Port | Container |
 |---------|------|-----------|
-| Chat | 11433 | `prlx-llm` |
-| Embeddings | 7997 | `prlx-embed` |
+| Chat and embeddings | 11433 | `prlx-llm` |
 | OpenViking | 1933 | `prlx-viking` |
 | Phoenix | 6006 | `prlx-phoenix` |
 | App | 8668 | `prlx-app` / `prlx-dev` |
+
+## One server for both models
+
+llama.cpp v0.7.0 has a router mode. The server starts with no model and
+loads the right one per request, based on the `model` field in the body.
+`config/llama-models.ini` defines both presets, and `embeddings = true` is
+set on the encoder preset only.
+
+That gives one CUDA context instead of two. On a 12 GB card that is already
+shared with another project, that is worth having.
+
+If the router misbehaves, the fallback is the standalone `prlx-embed`
+service, which is still in the compose file under the `embed` profile.
 
 ## What OpenViking 0.5.1.1 gives us
 

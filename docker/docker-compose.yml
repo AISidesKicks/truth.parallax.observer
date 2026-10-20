@@ -8,6 +8,8 @@
 name: prlx
 
 services:
+  # Router mode. One llama.cpp server hosts both models, the request body
+  # decides which one answers. See config/llama-models.ini.
   prlx-llm:
     image: ghcr.io/ggml-org/llama.cpp:server-cuda13
     container_name: prlx-llm
@@ -15,21 +17,14 @@ services:
       - "${LLM_PORT:-11433}:8080"
     volumes:
       - ../.models/llama:/models:ro
+      - ../config/llama-models.ini:/app/models.ini:ro
     environment:
       LLAMA_ARG_HOST: "0.0.0.0"
       LLAMA_ARG_PORT: "8080"
-      LLAMA_ARG_MODEL: "/models/${LLM_MODEL_FILE:-granite-4.0-h-tiny-Q4_K_M.gguf}"
-      LLAMA_ARG_ALIAS: "${LLM_MODEL_ALIAS:-granite-4.0-h-tiny}"
-      LLAMA_ARG_CTX_SIZE: "${LLM_CTX_SIZE:-32768}"
-      LLAMA_ARG_N_GPU_LAYERS: "${LLM_N_GPU_LAYERS:-99}"
-      LLAMA_ARG_N_PARALLEL: "${LLM_N_PARALLEL:-2}"
-      LLAMA_ARG_BATCH: "${LLM_BATCH:-2048}"
-      LLAMA_ARG_UBATCH: "${LLM_UBATCH:-512}"
-      LLAMA_ARG_JINJA: "1"
-      LLAMA_ARG_FLASH_ATTN: "1"
-      LLAMA_ARG_CACHE_TYPE_K: "${LLM_CACHE_TYPE:-q8_0}"
-      LLAMA_ARG_CACHE_TYPE_V: "${LLM_CACHE_TYPE:-q8_0}"
-      LLAMA_ARG_THINK: "${LLM_THINK:-1}"
+      LLAMA_ARG_MODELS_PRESET: /app/models.ini
+      LLAMA_ARG_MODELS_MAX: "2"
+      LLAMA_ARG_MODELS_AUTOLOAD: "true"
+      LLAMA_ARG_SLEEP_IDLE_SECONDS: "0"
       NVIDIA_VISIBLE_DEVICES: all
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
     deploy:
@@ -51,6 +46,8 @@ services:
     networks:
       - prlx-lab
 
+  # Standalone embedding server. Only needed if you want the encoder in its
+  # own container, which costs one more CUDA context of VRAM.
   prlx-embed:
     image: ghcr.io/ggml-org/llama.cpp:server-cuda13
     container_name: prlx-embed
@@ -105,10 +102,10 @@ services:
     environment:
       OPENVIKING_CONFIG_FILE: /app/openviking.conf
       VIKING_WORKSPACE: /app/viking_data
-      VIKING_EMBEDDING_BASE: http://prlx-embed:8080/v1
+      VIKING_EMBEDDING_BASE: "${EMBEDDING_API_BASE:-http://prlx-llm:8080/v1}"
       VIKING_EMBEDDING_API_KEY: "${VIKING_EMBEDDING_API_KEY:-parallax-local}"
       VIKING_EMBEDDING_MODEL: "${EMBED_MODEL_ALIAS:-embeddinggemma-2}"
-      VIKING_VLM_BASE: http://prlx-llm:8080/v1
+      VIKING_VLM_BASE: "http://prlx-llm:8080/v1"
       VIKING_VLM_API_KEY: "${VIKING_VLM_API_KEY:-parallax-local}"
       VIKING_VLM_MODEL: "${LLM_MODEL_ALIAS:-granite-4.0-h-tiny}"
     healthcheck:
@@ -163,7 +160,7 @@ services:
     environment:
       - LLM_API_BASE=http://prlx-llm:8080/v1
       - LLM_MODEL=${LLM_MODEL_ALIAS:-granite-4.0-h-tiny}
-      - EMBEDDING_API_BASE=http://prlx-embed:8080/v1
+      - EMBEDDING_API_BASE=${EMBEDDING_API_BASE:-http://prlx-llm:8080/v1}
       - EMBEDDING_MODEL=${EMBED_MODEL_ALIAS:-embeddinggemma-2}
       - EMBEDDING_DIMENSION=${EMBEDDING_DIMENSION:-768}
       - OPENVIKING_URL=http://prlx-viking:1933
@@ -204,7 +201,7 @@ services:
     environment:
       - LLM_API_BASE=http://prlx-llm:8080/v1
       - LLM_MODEL=${LLM_MODEL_ALIAS:-granite-4.0-h-tiny}
-      - EMBEDDING_API_BASE=http://prlx-embed:8080/v1
+      - EMBEDDING_API_BASE=${EMBEDDING_API_BASE:-http://prlx-llm:8080/v1}
       - EMBEDDING_MODEL=${EMBED_MODEL_ALIAS:-embeddinggemma-2}
       - EMBEDDING_DIMENSION=${EMBEDDING_DIMENSION:-768}
       - OPENVIKING_URL=http://prlx-viking:1933

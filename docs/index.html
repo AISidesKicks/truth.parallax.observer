@@ -164,12 +164,16 @@ One RTX 4070, twelve gigabytes, no cloud account, no API key.
 </p>
 <table>
   <tr><th>Service</th><th>Port</th><th>What it does</th></tr>
-  <tr><td>Chat</td><td>11433</td><td>llama.cpp serving granite-4.0-h-tiny</td></tr>
-  <tr><td>Embeddings</td><td>7997</td><td>llama.cpp serving EmbeddingGemma 2</td></tr>
+  <tr><td>Chat and embeddings</td><td>11433</td><td>llama.cpp router, granite-4.0-h-tiny and EmbeddingGemma 2</td></tr>
   <tr><td>Memory</td><td>1933</td><td>OpenViking context server</td></tr>
   <tr><td>Observability</td><td>6006</td><td>Phoenix</td></tr>
   <tr><td>App</td><td>8668</td><td>The terminal style chat UI</td></tr>
 </table>
+<p>
+Both models live in a single llama.cpp server that runs in router mode, so
+the request body decides which one answers. One CUDA context instead of two,
+which is what makes the card comfortable.
+</p>
 
 <h3>Run it</h3>
 <pre><code>pixi install
