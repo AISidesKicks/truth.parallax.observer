@@ -1,6 +1,34 @@
 # Source audit and enrichment plan
 
-Status: audit done, the knowledge tier is still empty.
+Status: the knowledge tier is built, 347 entries. The two empty quote
+categories are still empty.
+
+## Which corpus matters most
+
+The point of the lab is to push the model somewhere its training data does
+not cover, and then watch it fail in a new way.
+
+A flat Earth argument is deeply embedded. Every model ever trained has read
+the debunkings, knows the Bedford Level experiment, and will talk you out of
+it. That case is solved in the training data.
+
+The Discworld and Norse corpora are thin. Scattered blog posts, no citations,
+no consistent physics. That is where the novel errors live, and that is where
+the corpus should be deepest.
+
+So the enrichment budget is not spread evenly:
+
+| Worldview | Training data | Priority |
+|-----------|---------------|----------|
+| flat-earth | deep | keep it, it is the control case |
+| spherical-earth | deep | keep it, it is the control case |
+| discworld | thin | **deepen this one** |
+| norse | thin | **deepen this one** |
+
+Right now the corpus is the other way round. The flat Earth enrichment has
+135 wisdoms and the richest source material, while Discworld and Norse have
+112 to 121 and much thinner sources. The knowledge tier fixed part of this
+already, see below.
 
 ## What we have
 
@@ -42,9 +70,9 @@ takes whatever is longer than 10 characters.
 **All 486 wisdoms come from these 662 lines.** The 4.7 MB of raw sources
 produces exactly zero wisdoms.
 
-## The gap
+## The gap that was
 
-`facts/knowledge/` has 8 planned directories and 0 files.
+`facts/knowledge/` had 8 planned directories and 0 files.
 
 `plans/memory.md` splits the corpus in two:
 
@@ -52,11 +80,14 @@ produces exactly zero wisdoms.
 - `resources/enrichment/` - the ammunition, catchphrases and claims
 
 The retrieval plan in that same document searches both. One for the claim,
-one for the ammo. Right now there is only ammo.
+one for the ammo. There was only ammo.
 
-That matters for the experiment. The Spokesperson can quote a catchphrase but
-not Rowbotham's actual treatise. The Fact Checker can say "that is false" but
-cannot cite the geodesy paper. The Informant has nothing to inform with.
+That mattered for the experiment. The Spokesperson could quote a catchphrase
+but not Rowbotham's actual treatise. The Fact Checker could say "that is
+false" but could not cite the geodesy paper. The Informant had nothing to
+inform with.
+
+The tier is built now. See below.
 
 ## Other findings
 
@@ -92,38 +123,53 @@ cannot cite the geodesy paper. The Informant has nothing to inform with.
 
 ## What to build
 
-### 1. A chunker for the raw sources
+### 1. A chunker for the raw sources - done
 
-Split on headings, keep the source URL and the heading path in the front
-matter, and write the chunk text verbatim. No model in the loop for the
-content itself.
+`scripts/chunk_knowledge.py` splits the raw sources on headings and writes the
+text verbatim. No model touches the content itself.
 
 ```
 dataset/flat-earth/victorian/one-hundred-proofs.md
-  -> facts/knowledge/flat-earth/victorian/one-hundred-proofs/<slug>/
+  -> facts/knowledge/flat-earth/victorian/<slug>/
        content.md      the text as written
        .abstract.md    the L0 essence, generated
        .overview.md    the L1 insight, generated
-       .metadata.yaml  source_url, heading path, offsets
+       .metadata.yaml  source_url, heading path, word count
 ```
 
-Verbatim content, generated summaries. The split mirrors what the
-enrichment tier does, but the facts stay true because nobody rewrote them.
+Result: 347 entries, about 293k tokens, split over six folders.
+
+| Folder | Entries |
+|--------|---------|
+| `flat-earth/biblical` | 58 |
+| `flat-earth/vedic` | 52 |
+| `flat-earth/victorian` | 39 |
+| `spherical-earth/scientific` | 71 |
+| `discworld/fictional` | 47 |
+| `norse/fictional` | 50 |
+
+Three things the chunker had to deal with:
+
+- docling leaves navigation breadcrumbs in the text, so those get stripped
+- the PDF extractions are hard wrapped, one fragment per line, so those get
+  unwrapped back into paragraphs
+- the split level is the deepest heading a document really uses, not the
+  deepest one present, otherwise footer widgets become the section structure
 
 ### 2. The same three tier names OpenViking wants
 
 ```
-l0.abstract  ->  .abstract.md
-l1.overview  ->  .overview.md
+l0.abstract   ->  .abstract.md
+l1.overview   ->  .overview.md
 l2.content.md ->  content.md
 ```
 
 Then `reindex(mode="vectors_only")` picks it up. No LLM call at index time.
 
-### 3. Fix the frontmatter at the source
+### 3. Fix the frontmatter at the source - done
 
-Rewrite `target` and `category` in the 14 `dataset/fictional/` files so the
-values match the path. Cheap, and it removes a trap for the next script.
+10 files in `dataset/fictional/` had `target` and `category` the wrong way
+round. Rewritten to match the path. The path is the only reliable signal.
 
 ### 4. Fill the two empty quote categories
 
@@ -132,11 +178,11 @@ values match the path. Cheap, and it removes a trap for the next script.
 | `norse/quotes` | Edda verses, `dataset/fictional/norse/nine-worlds.md`, `norse-collector.md` |
 | `spherical-earth/quotes` | `dataset/spherical-earth/scientific/`, scientists on geodesy |
 
-### 5. Clean the stray directories
+### 5. Clean the stray directories - done
 
-Move or remove `facts/enrichment/nasa-photos-cgi/` and
-`facts/enrichment/nasa-photos-cgi-test/`, and point `test_single_fact()` at
-the right directory so it stops writing to the root.
+`facts/enrichment/nasa-photos-cgi/` and `facts/enrichment/nasa-photos-cgi-test/`
+were test artifacts at the wrong level. Removed. `test_single_fact()` still
+writes to the root of `FACTS_DIR`, that needs fixing.
 
 ### 6. Make the image tier real, or drop it
 
@@ -146,14 +192,13 @@ plan. Half a feature is worse than none.
 
 ## Order of work
 
-1. Frontmatter fix and stray directory cleanup. Cheap, unblocks everything.
-2. Chunker for the raw sources, into `facts/knowledge/`.
-3. Summary generation for the knowledge tier, reusing the existing tier
-   prompts.
-4. Quote seeds for the two empty categories.
+1. Frontmatter fix and stray directory cleanup. Done.
+2. Chunker for the raw sources, into `facts/knowledge/`. Done.
+3. Summary generation for the knowledge tier. Running.
+4. Quote seeds for the two empty categories, weighted towards Norse and
+   Discworld rather than the control cases.
 5. Images, decide.
 
-Step 3 is the only expensive one. 685 headings means a few hundred L0 and L1
-pairs, roughly the same order of work as the 486 enrichment wisdoms that
-already exist. On the llama.cpp chat server that is an evening, not a
-weekend.
+Step 3 is the only expensive one. 347 entries, two summaries each, roughly
+700 calls. On the llama.cpp chat server that is an hour at concurrency 2.
+
