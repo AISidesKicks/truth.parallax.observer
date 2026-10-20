@@ -435,14 +435,34 @@ def extract_fact_name(fact_text: str, index: int) -> str:
     text = fact_text.strip()
     if text.lower().startswith("why "):
         text = text[4:]
-    
+
     words = text.split()[:4]
     slug = slugify(" ".join(words))
-    
+
     if not slug:
         slug = f"fact-{index}"
-    
+
     return slug
+
+
+def plan_fact_names(facts: list[str]) -> list[str]:
+    """The directory name for every fact, collisions resolved.
+
+    Two facts can start with the same four words, so the first one keeps the
+    plain name and the others get an index suffix. The prune and the
+    expansion have to agree on this, so it lives in one place.
+    """
+    used: set[str] = set()
+    names: list[str] = []
+
+    for index, fact in enumerate(facts):
+        name = extract_fact_name(fact, index)
+        if name in used:
+            name = f"{name}-{index}"
+        used.add(name)
+        names.append(name)
+
+    return names
 
 
 def parse_enrichment_file(filepath: Path) -> tuple[list[str], dict]:
@@ -600,7 +620,7 @@ def prune_stale_wisdoms(dry_run: bool = False) -> int:
         if not output_dir.exists():
             continue
 
-        expected = {extract_fact_name(fact, i) for i, fact in enumerate(facts)}
+        expected = set(plan_fact_names(facts))
         for entry in sorted(output_dir.iterdir()):
             if not entry.is_dir() or entry.name in expected:
                 continue
@@ -639,7 +659,12 @@ async def expand_enrichment_file(
                 existing_wisdoms.add(existing.name)
     
     total_facts = len(facts)
-    facts_to_process = [(i, f) for i, f in enumerate(facts) if start_index <= i and extract_fact_name(f, i) not in existing_wisdoms]
+    planned_names = plan_fact_names(facts)
+    facts_to_process = [
+        (i, f)
+        for i, f in enumerate(facts)
+        if start_index <= i and planned_names[i] not in existing_wisdoms
+    ]
     
     logger.info(f"Processing {input_file}: {len(facts_to_process)} of {total_facts} facts (skipping {len(existing_wisdoms)} existing)")
     
@@ -654,7 +679,7 @@ async def expand_enrichment_file(
         chunk = facts_to_process[chunk_start:chunk_start + chunk_size]
         
         for i, fact in chunk:
-            fact_name = extract_fact_name(fact, i)
+            fact_name = planned_names[i]
             
             # Check GPU status
             if monitor:
@@ -766,11 +791,11 @@ async def expand_with_options(
     for enrichment_file in ENRICHMENT_DIR.rglob("*.md"):
         _, fm = parse_enrichment(enrichment_file)
         file_target = fm.get("target", "unknown")
-        file_category = fm.get("type", "misleading-facts")
-        
+        file_category = category_dir_for(fm)
+
         if target and file_target != target:
             continue
-        if category and category not in file_category:
+        if category and category != file_category:
             continue
         
         files_to_process.append(enrichment_file)
