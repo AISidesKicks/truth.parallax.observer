@@ -19,9 +19,15 @@ lint = { cmd = "ruff check .", description = "Lint the code" }
 format = { cmd = "ruff format .", description = "Format the code" }
 
 # --- viking --------------------------------------------------------------
-viking-status = { cmd = "python scripts/viking_status.py", description = "Show the OpenViking server status" }
 viking-migrate = { cmd = "python scripts/migrate_to_viking.py", description = "Seed the corpus into the OpenViking workspace" }
+viking-reindex = { cmd = "python scripts/migrate_to_viking.py --reindex", description = "Seed the corpus and rebuild the vector index" }
 viking-probe = { cmd = "python scripts/probe_viking.py", description = "Run a scoped retrieval against the corpus" }
+
+# --- corpus --------------------------------------------------------------
+chunk-knowledge = { cmd = "python scripts/chunk_knowledge.py", description = "Rebuild the knowledge tier from the raw sources" }
+summarize-knowledge = { cmd = "python scripts/chunk_knowledge.py --summarize --resume", description = "Generate the L0 and L1 tiers of the knowledge corpus" }
+prune-enrichment = { cmd = "python scripts/expand_enrichment.py --prune", description = "Remove wisdoms that no longer match the seed files" }
+expand-enrichment = { cmd = "python scripts/expand_enrichment.py --all --resume", description = "Expand the enrichment seeds into wisdoms" }
 
 [dependencies]
 python = "==3.12"
