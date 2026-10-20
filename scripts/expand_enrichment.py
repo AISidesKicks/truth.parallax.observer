@@ -653,7 +653,7 @@ async def expand_enrichment_file(
 
     # Check for existing wisdoms (skip already processed)
     existing_wisdoms = set()
-    if resume:
+    if resume and output_dir.exists():
         for existing in output_dir.iterdir():
             if existing.is_dir() and (existing / ".metadata.yaml").exists():
                 existing_wisdoms.add(existing.name)
