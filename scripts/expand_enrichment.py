@@ -20,6 +20,7 @@ import json
 import logging
 import os
 import re
+import shutil
 import sys
 import time
 from dataclasses import dataclass
@@ -573,6 +574,46 @@ tiers:
     }
 
 
+def category_dir_for(frontmatter: dict) -> str:
+    """Map the seed type to the output folder name."""
+    category = frontmatter.get("type", "misleading-facts")
+    if "catchphrase" in category:
+        return "catchphrases"
+    if "quote" in category:
+        return "quotes"
+    return "misleading-facts"
+
+
+def prune_stale_wisdoms(dry_run: bool = False) -> int:
+    """Remove wisdoms that no longer match any fact in the seed files.
+
+    The seed parser used to fall back to line by line, which turned the
+    metadata lines of a catchphrase file into wisdoms of their own. The
+    parser is fixed now, so those leftovers have to go.
+    """
+    removed = 0
+    for seed in sorted(Path("dataset/enrichment").rglob("*.md")):
+        facts, frontmatter = parse_enrichment_file(seed)
+        target = frontmatter.get("target", "unknown")
+        output_dir = FACTS_DIR / target / category_dir_for(frontmatter)
+
+        if not output_dir.exists():
+            continue
+
+        expected = {extract_fact_name(fact, i) for i, fact in enumerate(facts)}
+        for entry in sorted(output_dir.iterdir()):
+            if not entry.is_dir() or entry.name in expected:
+                continue
+            removed += 1
+            if dry_run:
+                logger.info("would remove %s", entry)
+            else:
+                shutil.rmtree(entry)
+                logger.info("removed %s", entry)
+
+    return removed
+
+
 async def expand_enrichment_file(
     input_file: Path,
     output_base: Path,
@@ -582,21 +623,14 @@ async def expand_enrichment_file(
     resume: bool = False,
 ) -> list[dict]:
     """Expand all facts in an enrichment file with GPU monitoring and chunking."""
-    
+
     facts, frontmatter = parse_enrichment_file(input_file)
-    
+
     target = frontmatter.get("target", "unknown")
-    category = frontmatter.get("type", "misleading-facts")
-    
-    if "catchphrase" in category:
-        category_dir = "catchphrases"
-    elif "quote" in category:
-        category_dir = "quotes"
-    else:
-        category_dir = "misleading-facts"
-    
+    category_dir = category_dir_for(frontmatter)
+
     output_dir = output_base / target / category_dir
-    
+
     # Check for existing wisdoms (skip already processed)
     existing_wisdoms = set()
     if resume:
@@ -675,18 +709,21 @@ async def expand_enrichment_file(
 async def test_single_fact():
     """Test with a single fact."""
     test_fact = "Why NASA has never shown a real photo of Earth. Period."
-    
+
     logger.info("Testing single fact expansion...")
-    
+
+    # into a scratch folder, never into the corpus itself
+    output_dir = Path("scratch/expand_test") / "flat-earth" / "misleading-facts"
+
     result = await expand_fact(
         fact_text=test_fact,
         fact_name="nasa-photos-cgi-test",
         target="flat-earth",
         category="misleading-facts",
         source_file="test",
-        output_dir=FACTS_DIR,
+        output_dir=output_dir,
     )
-    
+
     logger.info(f"Test result: {result}")
     return result
 
@@ -822,9 +859,23 @@ def main():
     parser.add_argument("--resume", action="store_true", help="Resume from checkpoint")
     parser.add_argument("--start", type=int, default=0, help="Start from fact index")
     parser.add_argument("--end", type=int, help="End at fact index")
-    
+    parser.add_argument(
+        "--prune",
+        action="store_true",
+        help="Remove wisdoms that no longer match any seed fact and exit",
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="With --prune, only report what would go"
+    )
+
     args = parser.parse_args()
-    
+
+    if args.prune:
+        removed = prune_stale_wisdoms(dry_run=args.dry_run)
+        action = "would remove" if args.dry_run else "removed"
+        logger.info("%s %d stale wisdoms", action, removed)
+        return
+
     if args.test:
         asyncio.run(test_single_fact())
     elif args.all:

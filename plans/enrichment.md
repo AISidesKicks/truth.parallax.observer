@@ -92,7 +92,7 @@ The tier is built now. See below.
 ## Other findings
 
 1. **Two empty quote categories.** `norse/quotes` and `spherical-earth/quotes`
-   are 0 wisdoms. There are no seed files for them.
+   are 0 wisdoms. Seed files written for both, 13 quotes each.
 
 2. **Swapped frontmatter in `dataset/fictional/`.** 11 of 14 files have
    `target` and `category` the wrong way round:
@@ -102,13 +102,12 @@ The tier is built now. See below.
    dataset/fictional/discworld/discworld-geography.md target=discworld category=fictional
    ```
 
-   The path is the only reliable signal. Anything that groups by frontmatter
-   will mis-bucket those files.
+   The path is the only reliable signal. Rewritten, 10 files changed.
 
 3. **Two stray directories** at the root of `facts/enrichment/`:
    `nasa-photos-cgi/` and `nasa-photos-cgi-test/`. They come from
-   `test_single_fact()` in `scripts/expand_enrichment.py`, which writes to
-   `FACTS_DIR` instead of the category directory.
+   `test_single_fact()`, which wrote to `FACTS_DIR` instead of a scratch
+   folder. Removed, and the test now writes to `scratch/expand_test/`.
 
 4. **The L2 texts are generated, not sourced.** They read well and they are
    good ammunition, but they carry hallucinations. In
@@ -120,6 +119,40 @@ The tier is built now. See below.
 
 5. **`dataset/images/` is nearly empty.** Two files, four of five subfolders
    hold nothing. `scripts/download_images.py` exists but barely ran.
+
+6. **The seed parser was turning metadata into wisdoms.** This is the big
+   one.
+
+   The parser looked for numbered items and, when it found none, fell back
+   to line by line. Every `**Context:**`, `**Tone:**`, `**Persuasion hook:**`
+   and `**Source:**` line then became a wisdom of its own, with a generated
+   L0 that had drifted somewhere completely unrelated. A quick sample of the
+   flat earth catchphrase tier:
+
+   | Wisdom | Its L0 |
+   |--------|--------|
+   | `tone-humorous` | "Regularly consuming a banana per day boosts mood and productivity" |
+   | `tone-provocative` | "Artificial intelligence will soon surpass human cognitive abilities in all domains" |
+   | `persuasion-hook-challenges-authority` | "This study challenges conventional authority figures' influence on persuasion" |
+   | `the-only-globe` | "In a classroom setting, learners become global citizens through exposure to diverse perspectives" |
+
+   Counted over the whole tier: **48 of 484 wisdoms (9%) are metadata
+   artifacts**. The damage is concentrated:
+
+   | Category | Wisdoms | Artifacts |
+   |----------|---------|-----------|
+   | catchphrases | 55 | 41 (75%) |
+   | quotes | 29 | 7 (24%) |
+   | misleading-facts | 400 | 0 |
+
+   The misleading facts tier used numbered items, so it was never touched.
+   The catchphrase tier was three quarters junk.
+
+   The parser now understands blockquotes, which is the format the seeds
+   actually use, and skips the bold metadata lines. The seed files still
+   hold only 4 catchphrases and 6 quotes per worldview, so the tier is thin
+   as well as dirty.
+
 
 ## What to build
 
@@ -171,20 +204,46 @@ Then `reindex(mode="vectors_only")` picks it up. No LLM call at index time.
 10 files in `dataset/fictional/` had `target` and `category` the wrong way
 round. Rewritten to match the path. The path is the only reliable signal.
 
-### 4. Fill the two empty quote categories
+### 4. Fill the two empty quote categories - done
 
-| Category | Source to mine |
-|----------|----------------|
-| `norse/quotes` | Edda verses, `dataset/fictional/norse/nine-worlds.md`, `norse-collector.md` |
-| `spherical-earth/quotes` | `dataset/spherical-earth/scientific/`, scientists on geodesy |
+Seed files written for both, 13 quotes each:
 
-### 5. Clean the stray directories - done
+| Category | Seed file | Quotes |
+|----------|-----------|--------|
+| `norse/quotes` | `dataset/enrichment/quotes/norse-quotes.md` | 13 |
+| `spherical-earth/quotes` | `dataset/enrichment/quotes/spherical-earth-quotes.md` | 13 |
 
-`facts/enrichment/nasa-photos-cgi/` and `facts/enrichment/nasa-photos-cgi-test/`
-were test artifacts at the wrong level. Removed. `test_single_fact()` still
-writes to the root of `FACTS_DIR`, that needs fixing.
+The Norse ones come from the Poetic Edda, the Prose Edda and the modern
+readings in the corpus. The spherical ones from Eratosthenes, Newton,
+Foucault, Bradley and satellite geodesy.
 
-### 6. Make the image tier real, or drop it
+### 5. Clean the stale wisdoms - done
+
+`scripts/expand_enrichment.py --prune` removes any wisdom whose name does
+not match a parsed seed fact. That is the 48 metadata artifacts plus the
+entries the parser fix renamed.
+
+### 6. Regenerate the catchphrase and quote tiers
+
+With the parser fixed and the seeds in place, the two thin tiers get
+rebuilt:
+
+```bash
+pixi run python scripts/expand_enrichment.py --prune
+pixi run python scripts/expand_enrichment.py --category catchphrases
+pixi run python scripts/expand_enrichment.py --category quotes
+```
+
+The pipeline now talks to the OpenAI compatible endpoint instead of the dead
+Ollama `/api/generate`, so it runs against the llama.cpp server.
+
+### 7. More catchphrases
+
+The seeds hold 4 catchphrases per worldview. That is too thin for the tier
+that carries the personality. Target 15 to 20 per worldview, and weight
+them towards Norse and Discworld.
+
+### 8. Make the image tier real, or drop it
 
 Two options: finish the image download so the multimodal embedding model has
 something to embed, or delete `dataset/images/` and the SigLIP part of the
@@ -195,10 +254,13 @@ plan. Half a feature is worse than none.
 1. Frontmatter fix and stray directory cleanup. Done.
 2. Chunker for the raw sources, into `facts/knowledge/`. Done.
 3. Summary generation for the knowledge tier. Running.
-4. Quote seeds for the two empty categories, weighted towards Norse and
-   Discworld rather than the control cases.
-5. Images, decide.
+4. Prune the stale wisdoms. Done.
+5. Regenerate the catchphrase and quote tiers, plus the two new quote
+   categories.
+6. More catchphrases, weighted towards the thin worldviews.
+7. Images, decide.
 
-Step 3 is the only expensive one. 347 entries, two summaries each, roughly
+Step 3 is the expensive one. 347 entries, two summaries each, roughly
 700 calls. On the llama.cpp chat server that is an hour at concurrency 2.
+
 
