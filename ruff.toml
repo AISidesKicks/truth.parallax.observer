@@ -1,0 +1,36 @@
+line-length = 100
+target-version = "py312"
+
+extend-exclude = [
+    "scratch",
+    "investigations",
+]
+
+[lint]
+select = [
+    "E",   # pycodestyle
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+    "RUF", # ruff specific
+]
+ignore = [
+    "E501",   # long lines are handled by the formatter
+    "B008",   # function call in default argument is fine for FastAPI
+    "RUF001", # ambiguous unicode characters
+    "RUF002",
+    "RUF003",
+]
+
+exclude = [
+    "scratch",
+    "investigations",
+]
+
+[lint.per-file-ignores]
+# Legacy ingestion scripts, rewritten as part of the tooling upgrade
+"scripts/ingest_to_viking.py" = ["E722"]
+"scripts/test_viking_native.py" = ["E722"]
