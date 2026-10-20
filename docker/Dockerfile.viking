@@ -24,11 +24,12 @@ RUN pip install --no-cache-dir "openviking==0.5.1.1" && \
 RUN mkdir -p /app/viking_data /app/facts
 
 COPY config/openviking.conf /app/openviking.conf
+COPY docker/openviking-entrypoint.sh /usr/local/bin/openviking-entrypoint.sh
+RUN chmod +x /usr/local/bin/openviking-entrypoint.sh
 
 EXPOSE 1933
 
 HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=20 \
     CMD curl -fsS http://localhost:1933/health || exit 1
 
-CMD ["openviking-server", "--host", "0.0.0.0", "--port", "1933", \
-     "--config", "/app/openviking.conf"]
+ENTRYPOINT ["openviking-entrypoint.sh"]

@@ -106,8 +106,10 @@ services:
       OPENVIKING_CONFIG_FILE: /app/openviking.conf
       VIKING_WORKSPACE: /app/viking_data
       VIKING_EMBEDDING_BASE: http://prlx-embed:8080/v1
-      VIKING_VLM_BASE: http://prlx-llm:8080/v1
+      VIKING_EMBEDDING_API_KEY: "${VIKING_EMBEDDING_API_KEY:-parallax-local}"
       VIKING_EMBEDDING_MODEL: "${EMBED_MODEL_ALIAS:-embeddinggemma-2}"
+      VIKING_VLM_BASE: http://prlx-llm:8080/v1
+      VIKING_VLM_API_KEY: "${VIKING_VLM_API_KEY:-parallax-local}"
       VIKING_VLM_MODEL: "${LLM_MODEL_ALIAS:-granite-4.0-h-tiny}"
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:1933/health || exit 1"]
