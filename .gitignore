@@ -58,7 +58,9 @@ models/
 # Data directories, anchored to the project root so they cannot swallow
 # source folders with the same name, like src/memory/
 /data/
-/dataset/
+/dataset/*
+# the enrichment seeds are hand written, those are source and they are tracked
+!/dataset/enrichment/
 /facts/
 /embeddings/
 /viking_data/

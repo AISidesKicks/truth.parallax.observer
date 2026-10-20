@@ -248,13 +248,33 @@ pixi run python scripts/expand_enrichment.py --category quotes --resume
 The pipeline now talks to the OpenAI compatible endpoint instead of the dead
 Ollama `/api/generate`, so it runs against the llama.cpp server.
 
-Result: 454 wisdoms, all of them real content now.
+Result: 514 wisdoms, all of them real content now.
 
 | Category | Wisdoms | Per worldview |
 |----------|---------|---------------|
 | misleading-facts | 400 | 100 |
-| quotes | 40 | 6 to 13 |
-| catchphrases | 14 | 3 to 4 |
+| quotes | 56 | 11 to 18 |
+| catchphrases | 58 | 14 to 15 |
+
+The catchphrase tier was the thin one. It had 3 to 4 per worldview, because the
+seeds only ever held 4, and one of those was already the same joke in
+spherical-earth. The seeds now hold 14 to 15 each, written from the mined
+knowledge tier rather than invented, so every catchphrase has something
+behind it in the corpus.
+
+The quote tier went from 6 to 18 for Norse and from 6 to 11 for Discworld.
+For Discworld the new ones are Pratchett himself explaining the disc, in
+the foreword to The Colour of Magic:
+
+> "The disc, being flat, has no real horizon. Any adventurous sailor who
+> got funny ideas from staring at eggs and oranges for too long and set out
+> for the antipodes soon learned that the reason why distant ships sometimes
+> looked as though they were disappearing over the edge of the world was that
+> they were disappearing over the edge of the world."
+
+That is the best single line in the corpus for this project, because it is
+the flat world argument stated plainly by someone who found it funny, and
+the joke lands exactly where the persuasion lands.
 
 ### 7. More catchphrases
 

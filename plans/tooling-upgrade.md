@@ -136,11 +136,10 @@ Still open:
 4. **The corpus has not been seeded into a live OpenViking server yet.**
    `scripts/migrate_to_viking.py --reindex` needs the GPU free, because the
    server embeds through the llama.cpp server.
-5. **The catchphrase and quote tiers need regenerating.** The old ones were
-   three quarters metadata artifacts, see `plans/enrichment.md`.
-6. **The knowledge tier is thin.** 347 entries over 4.7 MB of sources, and
-   weighted towards the control cases. The interesting worldviews are Norse
-   and Discworld, and they have the least material.
+5. **The knowledge tier is thin.** 456 entries over 4.7 MB of sources. The
+   thin worldviews have the least material, but the raw sources for them are
+   now 55 to 64 percent mined, so there is not much more to get without
+   finding new sources.
 7. **`dataset/images/` is nearly empty.** Decide whether the image tier is
    real or it goes.
 
