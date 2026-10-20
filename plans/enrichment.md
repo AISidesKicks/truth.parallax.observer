@@ -248,8 +248,13 @@ pixi run python scripts/expand_enrichment.py --category quotes --resume
 The pipeline now talks to the OpenAI compatible endpoint instead of the dead
 Ollama `/api/generate`, so it runs against the llama.cpp server.
 
-Result so far: 400 misleading facts (100 per worldview), 14 catchphrases,
-and the quote tier with the two new categories.
+Result: 454 wisdoms, all of them real content now.
+
+| Category | Wisdoms | Per worldview |
+|----------|---------|---------------|
+| misleading-facts | 400 | 100 |
+| quotes | 40 | 6 to 13 |
+| catchphrases | 14 | 3 to 4 |
 
 ### 7. More catchphrases
 
