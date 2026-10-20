@@ -170,24 +170,29 @@ dataset/flat-earth/victorian/one-hundred-proofs.md
        .metadata.yaml  source_url, heading path, word count
 ```
 
-Result: 347 entries, about 293k tokens, split over six folders.
+Result: 458 entries, about 220k words, split over six folders.
 
 | Folder | Entries |
 |--------|---------|
-| `flat-earth/biblical` | 58 |
-| `flat-earth/vedic` | 52 |
-| `flat-earth/victorian` | 39 |
-| `spherical-earth/scientific` | 71 |
-| `discworld/fictional` | 47 |
-| `norse/fictional` | 50 |
+| `flat-earth/biblical` | 77 |
+| `flat-earth/vedic` | 74 |
+| `flat-earth/victorian` | 57 |
+| `spherical-earth/scientific` | 87 |
+| `discworld/fictional` | 78 |
+| `norse/fictional` | 85 |
 
-Three things the chunker had to deal with:
+Four things the chunker had to deal with:
 
 - docling leaves navigation breadcrumbs in the text, so those get stripped
 - the PDF extractions are hard wrapped, one fragment per line, so those get
   unwrapped back into paragraphs
 - the split level is the deepest heading a document really uses, not the
   deepest one present, otherwise footer widgets become the section structure
+- the Wikipedia language switcher, the nav boxes and the sister project
+  lists are navigation, not knowledge, so they get dropped. A couple of the
+  source files are 300 KB wide markdown tables on a single line, those get
+  cut on the cell boundary.
+
 
 ### 2. The same three tier names OpenViking wants
 
@@ -220,8 +225,14 @@ Foucault, Bradley and satellite geodesy.
 ### 5. Clean the stale wisdoms - done
 
 `scripts/expand_enrichment.py --prune` removes any wisdom whose name does
-not match a parsed seed fact. That is the 48 metadata artifacts plus the
-entries the parser fix renamed.
+not match a parsed seed fact. That took out the 48 metadata artifacts, the
+renamed entries and 15 misleading facts whose names collided.
+
+The name collision was its own bug. `extract_fact_name` takes the first four
+words of the fact, so two facts that start the same way got the same
+directory name. The expansion resolved it with an index suffix but the
+prune did not know about that. The naming now lives in one place,
+`plan_fact_names`, and both use it.
 
 ### 6. Regenerate the catchphrase and quote tiers
 
@@ -230,12 +241,15 @@ rebuilt:
 
 ```bash
 pixi run python scripts/expand_enrichment.py --prune
-pixi run python scripts/expand_enrichment.py --category catchphrases
-pixi run python scripts/expand_enrichment.py --category quotes
+pixi run python scripts/expand_enrichment.py --category catchphrases --resume
+pixi run python scripts/expand_enrichment.py --category quotes --resume
 ```
 
 The pipeline now talks to the OpenAI compatible endpoint instead of the dead
 Ollama `/api/generate`, so it runs against the llama.cpp server.
+
+Result so far: 400 misleading facts (100 per worldview), 14 catchphrases,
+and the quote tier with the two new categories.
 
 ### 7. More catchphrases
 
@@ -253,14 +267,13 @@ plan. Half a feature is worse than none.
 
 1. Frontmatter fix and stray directory cleanup. Done.
 2. Chunker for the raw sources, into `facts/knowledge/`. Done.
-3. Summary generation for the knowledge tier. Running.
+3. Summary generation for the knowledge tier. 458 entries, two summaries
+   each, roughly 900 calls. About an hour at concurrency 2.
 4. Prune the stale wisdoms. Done.
 5. Regenerate the catchphrase and quote tiers, plus the two new quote
-   categories.
+   categories. Running.
 6. More catchphrases, weighted towards the thin worldviews.
 7. Images, decide.
 
-Step 3 is the expensive one. 347 entries, two summaries each, roughly
-700 calls. On the llama.cpp chat server that is an hour at concurrency 2.
 
 
