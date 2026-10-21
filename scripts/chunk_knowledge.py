@@ -313,43 +313,38 @@ def slug_from_text(text: str, fallback: str) -> str:
 def looks_like_navigation(text: str) -> bool:
     """True for Wikipedia navigation boxes and project lists.
 
-    Docling pulls those in as well, and they carry no knowledge at all.
-    The bar is high on purpose: a chunk with a few wiki links in it is still
-    good material.
+    docling pulls those in as well, and they carry no knowledge at all.
+    The ratio checks only run on real prose, so a table heavy source with
+    no spaces in it is not mistaken for a list of links.
     """
     lowered = text.lower()
     if "sister projects" in lowered[:300]:
         return True
+    if "wikimedia commons has media related to" in lowered[:200]:
+        return True
+    if "mscelltype-navbody" in lowered:
+        return True
 
     words = text.split()
-    if not words:
+    if len(words) < 200:
         return False
 
     internal = re.findall(r"\]\(/wiki/(?:template|special|wikipedia):", lowered)
-    if len(internal) > 8 and len(internal) / max(len(words), 1) > 0.15:
+    if len(internal) > 8 and len(internal) / len(words) > 0.15:
         return True
 
     links = re.findall(r"\[([^\]]*)\]\([^)]*\)", text)
-    link_heavy = bool(len(links) > 20 and len(links) / max(len(words), 1) > 0.6)
+    return bool(len(links) > 20 and len(links) / len(words) > 0.6)
 
-    # a citation reference or a Commons list, nothing to learn from
-    references = re.findall(r"\[\d+\]", text)
-    reference_heavy = bool(
-        len(references) > 3 and len(references) / max(len(words), 1) > 0.2
-    )
-    commons = "wikimedia commons has media related to" in lowered[:200]
 
-    # newsletter and subscription footers
-    footer = lowered[:400]
-    subscribe = (
-        "start your substack" in footer
-        or "subscribe to our newsletter" in footer
-        or "sign up for our newsletter" in footer
-    )
-    if subscribe and len(words) < 120:
-        return True
-
-    return link_heavy or reference_heavy or commons
+# the sections that are a list of citations and nothing else
+REFERENCE_HEADING = re.compile(
+    r"^(references|external links|see also|further reading|primary sources|"
+    r"secondary sources|general and cited references|bibliography|"
+    r"relevant literature|notes|works cited|sources|further sources|"
+    r"citations|notes and references|primary and secondary sources)$",
+    re.I,
+)
 
 
 def chunk_file(path: Path, target: str, category: str, seen: set[str]) -> list[Chunk]:
@@ -375,6 +370,10 @@ def chunk_file(path: Path, target: str, category: str, seen: set[str]) -> list[C
         if len(text) < MIN_CHUNK_CHARS:
             continue
         if looks_like_navigation(text):
+            continue
+        if heading and REFERENCE_HEADING.match(heading.strip()):
+            continue
+        if "mscelltype-navbody" in text.lower():
             continue
 
         parts = split_long(text) if len(text) > MAX_CHUNK_CHARS else [text]
