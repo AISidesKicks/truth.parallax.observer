@@ -118,8 +118,9 @@ invent anything that is not in it.
 
 The visitor said: {message}
 
-Reply in character. Two or three short paragraphs. No markdown headers, no
-numbered lists, no bullet points. Speak to the visitor directly."""
+Reply in character. Two short paragraphs, about a hundred words in total. No
+markdown headers, no numbered lists, no bullet points. Speak to the visitor
+directly. Do not summarise what you were given, use it."""
 
 
 NO_FACTS_REPLY = (

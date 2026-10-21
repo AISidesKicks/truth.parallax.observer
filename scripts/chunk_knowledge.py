@@ -23,6 +23,7 @@ import asyncio
 import logging
 import os
 import re
+import shutil
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -748,6 +749,31 @@ async def summarize(
     logger.info("summarize finished: %d done, %d failed", done, failed)
 
 
+def clean_stale(expected: set[str]) -> int:
+    """Remove wisdom folders that the current chunking does not produce.
+
+    Changing the chunk size changes the slugs, and the old folders stay
+    behind with content that no longer matches anything.
+    """
+    removed = 0
+    for folder in sorted(KNOWLEDGE_DIR.rglob("*")):
+        if not folder.is_dir():
+            continue
+        relative = str(folder.relative_to(KNOWLEDGE_DIR))
+        if "/" not in relative:
+            continue
+        if relative in expected:
+            continue
+        if not (folder / "content.md").exists():
+            continue
+        shutil.rmtree(folder)
+        removed += 1
+
+    if removed:
+        logger.info("removed %d stale wisdom folders", removed)
+    return removed
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build the knowledge tier")
     parser.add_argument("--summarize", action="store_true", help="also generate L0 and L1")
@@ -758,6 +784,11 @@ def main() -> None:
     parser.add_argument("--concurrency", type=int, default=2)
     parser.add_argument("--resume", action="store_true", help="skip chunks that are done")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--clean",
+        action="store_true",
+        help="Remove the wisdom folders the chunking no longer produces",
+    )
     args = parser.parse_args()
 
     sources = collect_sources()
@@ -792,6 +823,11 @@ def main() -> None:
         write_chunk(chunk)
 
     logger.info("wrote %d knowledge entries", len(all_chunks))
+
+    if args.clean:
+        clean_stale(
+            {f"{chunk.target}/{chunk.category}/{chunk.slug}" for chunk in all_chunks}
+        )
 
     if args.summarize:
         logger.info("summarizing with %s at %s", args.model, args.endpoint)
