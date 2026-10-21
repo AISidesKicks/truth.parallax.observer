@@ -1,11 +1,11 @@
 # Which agent framework
 
-Decision: **take Tau's provider layer, keep our own orchestrator, do not use
-VikingBot.**
+Decision: **PydanticAI.**
 
-Status: settled, `tau-ai` is installed and proven against our model server.
+Status: settled and proven against our model server. `pydantic-ai-slim[openai]`
+is installed, and the 35 existing tests still pass with it in the environment.
 
-## The three candidates
+## The candidates
 
 ### VikingBot, inside `openviking[bot]`
 
@@ -19,8 +19,7 @@ Volcengine's own agent framework, shipped with the OpenViking server.
 | OpenViking | first class, session context injection, experience memory, viking tools |
 | Multi agent | none. `BotMode` is NORMAL, READONLY, DEBUG. No persona, no debate, no role. |
 
-It is a very good bot framework. It is not a debate framework, and it is not
-readable.
+A very good bot framework. Not a debate framework, and not readable.
 
 ### Tau, `huggingface/tau`
 
@@ -35,22 +34,36 @@ tau_coding  the CLI app: resources, skills, commands, TUI, provider config
 | | |
 |---|---|
 | Agent core | 1548 lines in total, the brain itself about 1100 |
-| Dependencies | anyio, httpx, packaging, pillow, pydantic, pygments, rich, textual, typer. Four we already have. |
+| Dependencies | anyio, httpx, packaging, pillow, pydantic, pygments, rich, textual, typer |
 | Events | a typed event stream, and the contract everything meets on |
 | Compaction | context accounting, manual and automatic |
 | Thinking | off, minimal, low, medium, high, xhigh, max |
 | Steering | the visitor can queue a message that interrupts the answer |
-| Model access | OpenAI, Anthropic, Codex, OpenRouter, HF, and custom OpenAI compatible endpoints including local models |
+| Model access | OpenAI, Anthropic, Codex, OpenRouter, HF, and custom OpenAI compatible endpoints |
 | Multi agent | none |
 
 Their own words: "Tau is also meant to be read. It is a teaching project for
 understanding the shape of a coding-agent system without starting from a giant
 production codebase."
 
-### What we have
+We installed it and ran it against our llama.cpp router. It works. 60 typed
+events, the answer streamed intact, the router and the reasoning model
+understood. It is a good piece of engineering.
 
-A hand written orchestrator in `src/agentic/`. Roughly 400 lines, no
-dependencies, 35 tests, and it is written from the BDD scenarios.
+### PydanticAI, `pydantic-ai-slim`
+
+Pydantic's own agent framework. MIT.
+
+| | |
+|---|---|
+| Dependencies | 8 core: anyio, genai-prices, griffelib, httpx2, opentelemetry-api, pydantic-graph, pydantic, typing-inspection. Plus the openai extra, which we already had. |
+| Typed output | the point of it. A pydantic model as the output schema, validated, with retries on failure |
+| Model access | any OpenAI compatible endpoint, through the openai SDK we already use |
+| Streaming | yes, `run_stream` |
+| Observability | OpenTelemetry in the core, and Phoenix is already in the stack |
+| Injection | dependencies go in the run context, not through a tool loop |
+| Graph | `pydantic-graph` is a core dependency, for a state machine when we want one |
+| Tools | optional. An agent with an output type and a fixed prompt is a pipeline step, not a tool loop |
 
 ## Why not VikingBot
 
@@ -60,81 +73,102 @@ dependencies, 35 tests, and it is written from the BDD scenarios.
    the point.
 2. **The dependency weight is for a different product.** Five chat platforms,
    a search API, an MCP client and a tracing vendor, for a lab that is one
-   web page. We would install litellm, which pulls a second HTTP stack and a
-   second model abstraction, next to the OpenAI SDK we already use.
+   web page. We would install litellm, a second HTTP stack and a second model
+   abstraction, next to the OpenAI SDK we already use.
 3. **It has no multi agent concept at all.** Fire Chat needs three personas,
    each with its own corpus scope, in a deterministic stage machine. That is
-   the whole of slice 3 and VikingBot does not have a shape for it.
+   the whole of slice 3 and VikingBot has no shape for it.
 
 Its one real advantage, the OpenViking integration, is already covered by our
 own client. And our client does the one thing that matters here and
 VikingBot does not: scope a search to one worldview directory.
 
-## Why not the Tau harness as the brain
+## Why not Tau
+
+Tau was the favourite until the structured output question came up.
 
 Tau's loop is tool driven. It asks the model to respond, and when the model
-asks for a tool it runs the tool and asks again.
-
-Our turn is a fixed pipeline:
+asks for a tool it runs the tool and asks again. Our turn is a fixed
+pipeline:
 
 ```
 read the visitor  ->  look in the corpus, scoped  ->  pick a tactic  ->  speak
 ```
 
 The retrieval is deliberate. We scope the query to the worldview, we inject
-exactly the material, and we pick the tactic from a rule set that a reader can
-inspect. The strategy selection is a rule, not a coin flip.
+exactly the material, and we pick the tactic from a rule set a reader can
+inspect. If granite-4.0-h-tiny at 2B active parameters decided whether to
+call `search_corpus`, retrieval would get worse and the lab premise would
+break. Tau would be giving us a nicer way to do the thing we deliberately do
+not want.
 
-If the model decided whether to call `search_corpus`, granite-4.0-h-tiny at
-2B active parameters would retrieve worse, and the lab premise would break.
-Tau would be giving us a nicer way to do the thing we deliberately do not
-want.
+Tau also has one system prompt for the life of a harness, and our prompts
+change every turn: persona, mood, tactic and material. We would rebuild the
+harness on every turn anyway.
 
-There is a second reason. Our prompts are built per turn. The persona, the
-mood, the tactic and the material all change. Tau's harness takes one system
-prompt for its life, so we would rebuild the harness on every turn anyway,
-which throws away the thing it was supposed to give us.
+What Tau would have given us, and what we get elsewhere:
 
-## What we take from Tau
+| From Tau | From PydanticAI instead |
+|---|---|
+| The provider layer, streaming, retries, thinking | the openai SDK, and PydanticAI on top of it |
+| Context accounting and compaction | ours, it is 80 lines and it keeps the belief and the rejected arguments |
+| The steering queue | ours to build, 30 lines |
+| The event taxonomy | PydanticAI's event stream, and the websocket already speaks it |
 
-### The provider layer, whole
+## Why PydanticAI
 
-`tau_ai` replaces `src/llm.py`. It is strictly more than what we wrote:
+It is the only one of the three that gives us the thing we actually needed
+and does not take away the thing we actually want.
 
-- streaming, so the interface can show the answer arriving instead of waiting
-- retries with backoff and readable HTTP errors
-- thinking mode handling, which our reasoning models need
-- usage accounting per call, for the monitoring bar
+**The thing we needed.** The moderator has to score three sides of a debate
+and return something the interface can render. That is a typed output, and
+PydanticAI is a typed output library first. Proven on our 2B model:
 
-Four of the nine dependencies we already have. Proven against our llama.cpp
-router with granite-4.0-h-tiny, 60 typed events, streamed answer intact.
+```json
+{
+  "scores": [
+    {"side": "Round Earth", "score": 8.0, "strongest_point": "...", "weakest_point": "..."},
+    {"side": "Flat Earth", "score": 6.0, "strongest_point": "...", "weakest_point": "..."},
+    {"side": "Disc on Elephants", "score": 2.0, "strongest_point": "...", "weakest_point": "..."}
+  ],
+  "winner": "Round Earth",
+  "summary": "The debate was won decisively by the Round Earth side..."
+}
+```
 
-### The steering queue
+That is a validated pydantic model, not a hopeful json.loads. The values are
+in range, the shape is guaranteed, and a failure retries instead of reaching
+the interface.
 
-Tau's `steer()` and `follow_up()` let a message arrive while the agent is
-still answering. For a persuasion lab that is a real feature. The visitor
-can cut the agent off mid-sentence, and the agent has to cope with being
-interrupted.
+We have already paid for this lesson once. The enrichment pipeline parses
+model output by hand, and its best effort json handling is the ugliest code
+in the project. PydanticAI is the version of that we would have written.
 
-It is about thirty lines in our orchestrator, and the idea is worth taking
-whether or not we use the package.
+**The thing we did not want to give up.** The tool loop is optional. An
+agent with an output type and a fixed prompt is a pipeline step, and our
+orchestrator stays a pipeline: retrieve, pick a tactic, speak. The model never
+decides what to look up.
 
-### The event taxonomy
+**What else comes with it.**
 
-Message start, text delta, thinking delta, tool call, done. Our websocket
-already streams a small version of this. Tau's names are a good model for
-the full one.
+- Streaming, so the interface shows the answer arriving
+- Usage accounting, so the monitoring bar is real
+- OpenTelemetry in the core, and Phoenix is already in the stack
+- The Viking client as a run context dependency, so the retrieval is
+  available without being a tool
+- `pydantic-graph` for the Fire Chat stage machine, if we want a formal one
 
-## What we do not take
+## What we do
 
-The harness, the loop, the tools, the sessions, the TUI, the CLI.
+```
+src/agentic/orchestrator.py   stays, it is the pipeline
+src/llm.py                    becomes a PydanticAI agent factory
+src/agentic/moderator.py      new, a typed agent that scores the sides
+src/agentic/fire_chat.py      new, the stage machine
+```
 
-## The plan
-
-1. `src/llm.py` becomes a thin wrapper over `tau_ai.OpenAICompatibleProvider`
-2. The orchestrator keeps the fixed pipeline, and gets a steering queue
-3. The websocket speaks the Tau event taxonomy
-4. Fire Chat is built on the orchestrator, not on a framework
+The Viking client is a run context dependency. The personas stay a dict. The
+tactics stay a rule set. The reader still sees everything.
 
 ## The finding about the models
 
@@ -150,8 +184,7 @@ the conda-forge build. The official GGUF exists, the architecture is just
 newer than every published binary.
 
 So we use EmbeddingGemma 300M, the `gemma-embedding` architecture, which
-every build knows. 768 dimensions, multilingual, 310 MB, and it embeds our
-corpus in about four minutes.
+every build knows. 768 dimensions, multilingual, 310 MB.
 
 If a llama.cpp release with `gemma-embedding2` lands, the swap is one line in
 `config/llama-models.ini` and one re-index.

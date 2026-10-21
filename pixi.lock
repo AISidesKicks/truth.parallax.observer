@@ -251,13 +251,16 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.1-pyh5ded981_0.conda
       - pypi: https://files.pythonhosted.org/packages/00/ea/b24e1375d66ec33eded1f55763265687b84d73c37204a9c9ace983b1ceec/openviking_sdk-0.1.16-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/04/10/fa543d484e8b1199243fe20eedd02cc5af050edebce98a7293a5773df592/markdownify-1.2.3-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/19/26/0898ea1d9d652123777557180830cf9e9d874d63c6657264bec2d394a1f8/tau_ai-0.4.8-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/26/83/d2fbd2e4e3afb1167daa825187d196f313cbaa1a4768f311fb041bb0e3d2/regex-2026.9.29-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/41/5a/b6b7d55148d367d07bcd3efdf24e3086ad199ea5109d0c335a872dfaac95/genai_prices-0.1.13-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/49/ca/f639c80449997b88aba7bc9705d25dd76cc0844f45f187862fd8f8bb18fa/soupsieve-3.0.3-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/51/11/9976ad86980a00cdef05e730a0127a2578a1bc6d11644d8d47246de2eb26/tiktoken-0.14.0-cp312-cp312-manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/53/a1/1681dfa1c904d4e3e72e51b55a0ff012d50b766843ef832d584abe2113c6/nvidia_ml_py-13.615.71-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/6c/8a/1d8cb3842909dc193a73835adedf412e32e18f8ffd59f43983949622fe6f/platformdirs-4.13.5-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/73/79/d8c8cb808b69a6f286bc8bab6bab832c1da98163ab37689bfd5208508f25/pydantic_ai_slim-2.59.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/7e/28/bb989a55ac56dabf30765d2e7ea0710c032d9b67d8a7599f91fdcb2e00b1/griffelib-2.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/88/c6/92fcd42f1ba33e1184263f25bfabf3d27c383410470f169e4b8163bf9c17/beautifulsoup4-4.15.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/a5/69/6da5581c6a7fede7dc261bf4e67d6adca4196f176b43288b55b3db395b6e/mdit_py_plugins-0.6.1-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/fb/be/35261223d9416a0751cdff1c7b4a6f881387218a12d439fe22fefebc8c04/textual-8.2.8-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/b9/5a/cd2d6e41b04c932c33dd027e119e3b6923c740e7b68da6f78cfb901040b4/logfire_api-5.2.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/e3/41/c55560304acbf4d9e3f9d55e9be424dfc486c8b65e9496c8a857efee3e17/pydantic_graph-2.59.0-py3-none-any.whl
   default:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -377,16 +380,17 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.1-pyh5ded981_0.conda
       - pypi: https://files.pythonhosted.org/packages/00/ea/b24e1375d66ec33eded1f55763265687b84d73c37204a9c9ace983b1ceec/openviking_sdk-0.1.16-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/04/10/fa543d484e8b1199243fe20eedd02cc5af050edebce98a7293a5773df592/markdownify-1.2.3-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/19/26/0898ea1d9d652123777557180830cf9e9d874d63c6657264bec2d394a1f8/tau_ai-0.4.8-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/26/83/d2fbd2e4e3afb1167daa825187d196f313cbaa1a4768f311fb041bb0e3d2/regex-2026.9.29-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/41/5a/b6b7d55148d367d07bcd3efdf24e3086ad199ea5109d0c335a872dfaac95/genai_prices-0.1.13-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/49/ca/f639c80449997b88aba7bc9705d25dd76cc0844f45f187862fd8f8bb18fa/soupsieve-3.0.3-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/51/11/9976ad86980a00cdef05e730a0127a2578a1bc6d11644d8d47246de2eb26/tiktoken-0.14.0-cp312-cp312-manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/53/a1/1681dfa1c904d4e3e72e51b55a0ff012d50b766843ef832d584abe2113c6/nvidia_ml_py-13.615.71-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/63/34/ba1c580383c9eada3711951fef0795c80b829a078d72188184bcab9dd527/packaging-26.3-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/6c/8a/1d8cb3842909dc193a73835adedf412e32e18f8ffd59f43983949622fe6f/platformdirs-4.13.5-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/73/79/d8c8cb808b69a6f286bc8bab6bab832c1da98163ab37689bfd5208508f25/pydantic_ai_slim-2.59.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/7e/28/bb989a55ac56dabf30765d2e7ea0710c032d9b67d8a7599f91fdcb2e00b1/griffelib-2.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/88/c6/92fcd42f1ba33e1184263f25bfabf3d27c383410470f169e4b8163bf9c17/beautifulsoup4-4.15.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/a5/69/6da5581c6a7fede7dc261bf4e67d6adca4196f176b43288b55b3db395b6e/mdit_py_plugins-0.6.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/e6/99/fdf65cc539e266ab93546c261bdf98411fe165c6e4e13f9dbf597097192b/pillow-13.0.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
-      - pypi: https://files.pythonhosted.org/packages/fb/be/35261223d9416a0751cdff1c7b4a6f881387218a12d439fe22fefebc8c04/textual-8.2.8-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/b9/5a/cd2d6e41b04c932c33dd027e119e3b6923c740e7b68da6f78cfb901040b4/logfire_api-5.2.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/e3/41/c55560304acbf4d9e3f9d55e9be424dfc486c8b65e9496c8a857efee3e17/pydantic_graph-2.59.0-py3-none-any.whl
   experiment:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -514,15 +518,17 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.1-pyh5ded981_0.conda
       - pypi: https://files.pythonhosted.org/packages/00/ea/b24e1375d66ec33eded1f55763265687b84d73c37204a9c9ace983b1ceec/openviking_sdk-0.1.16-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/04/10/fa543d484e8b1199243fe20eedd02cc5af050edebce98a7293a5773df592/markdownify-1.2.3-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/19/26/0898ea1d9d652123777557180830cf9e9d874d63c6657264bec2d394a1f8/tau_ai-0.4.8-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/26/83/d2fbd2e4e3afb1167daa825187d196f313cbaa1a4768f311fb041bb0e3d2/regex-2026.9.29-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/41/5a/b6b7d55148d367d07bcd3efdf24e3086ad199ea5109d0c335a872dfaac95/genai_prices-0.1.13-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/49/ca/f639c80449997b88aba7bc9705d25dd76cc0844f45f187862fd8f8bb18fa/soupsieve-3.0.3-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/51/11/9976ad86980a00cdef05e730a0127a2578a1bc6d11644d8d47246de2eb26/tiktoken-0.14.0-cp312-cp312-manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/53/a1/1681dfa1c904d4e3e72e51b55a0ff012d50b766843ef832d584abe2113c6/nvidia_ml_py-13.615.71-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/6c/8a/1d8cb3842909dc193a73835adedf412e32e18f8ffd59f43983949622fe6f/platformdirs-4.13.5-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/73/79/d8c8cb808b69a6f286bc8bab6bab832c1da98163ab37689bfd5208508f25/pydantic_ai_slim-2.59.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/7e/28/bb989a55ac56dabf30765d2e7ea0710c032d9b67d8a7599f91fdcb2e00b1/griffelib-2.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/88/c6/92fcd42f1ba33e1184263f25bfabf3d27c383410470f169e4b8163bf9c17/beautifulsoup4-4.15.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/a5/69/6da5581c6a7fede7dc261bf4e67d6adca4196f176b43288b55b3db395b6e/mdit_py_plugins-0.6.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/e6/99/fdf65cc539e266ab93546c261bdf98411fe165c6e4e13f9dbf597097192b/pillow-13.0.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
-      - pypi: https://files.pythonhosted.org/packages/fb/be/35261223d9416a0751cdff1c7b4a6f881387218a12d439fe22fefebc8c04/textual-8.2.8-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/b9/5a/cd2d6e41b04c932c33dd027e119e3b6923c740e7b68da6f78cfb901040b4/logfire_api-5.2.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/e3/41/c55560304acbf4d9e3f9d55e9be424dfc486c8b65e9496c8a857efee3e17/pydantic_graph-2.59.0-py3-none-any.whl
   native:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -671,16 +677,17 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.1-pyh5ded981_0.conda
       - pypi: https://files.pythonhosted.org/packages/00/ea/b24e1375d66ec33eded1f55763265687b84d73c37204a9c9ace983b1ceec/openviking_sdk-0.1.16-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/04/10/fa543d484e8b1199243fe20eedd02cc5af050edebce98a7293a5773df592/markdownify-1.2.3-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/19/26/0898ea1d9d652123777557180830cf9e9d874d63c6657264bec2d394a1f8/tau_ai-0.4.8-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/26/83/d2fbd2e4e3afb1167daa825187d196f313cbaa1a4768f311fb041bb0e3d2/regex-2026.9.29-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/41/5a/b6b7d55148d367d07bcd3efdf24e3086ad199ea5109d0c335a872dfaac95/genai_prices-0.1.13-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/49/ca/f639c80449997b88aba7bc9705d25dd76cc0844f45f187862fd8f8bb18fa/soupsieve-3.0.3-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/51/11/9976ad86980a00cdef05e730a0127a2578a1bc6d11644d8d47246de2eb26/tiktoken-0.14.0-cp312-cp312-manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/53/a1/1681dfa1c904d4e3e72e51b55a0ff012d50b766843ef832d584abe2113c6/nvidia_ml_py-13.615.71-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/63/34/ba1c580383c9eada3711951fef0795c80b829a078d72188184bcab9dd527/packaging-26.3-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/6c/8a/1d8cb3842909dc193a73835adedf412e32e18f8ffd59f43983949622fe6f/platformdirs-4.13.5-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/73/79/d8c8cb808b69a6f286bc8bab6bab832c1da98163ab37689bfd5208508f25/pydantic_ai_slim-2.59.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/7e/28/bb989a55ac56dabf30765d2e7ea0710c032d9b67d8a7599f91fdcb2e00b1/griffelib-2.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/88/c6/92fcd42f1ba33e1184263f25bfabf3d27c383410470f169e4b8163bf9c17/beautifulsoup4-4.15.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/a5/69/6da5581c6a7fede7dc261bf4e67d6adca4196f176b43288b55b3db395b6e/mdit_py_plugins-0.6.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/e6/99/fdf65cc539e266ab93546c261bdf98411fe165c6e4e13f9dbf597097192b/pillow-13.0.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
-      - pypi: https://files.pythonhosted.org/packages/fb/be/35261223d9416a0751cdff1c7b4a6f881387218a12d439fe22fefebc8c04/textual-8.2.8-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/b9/5a/cd2d6e41b04c932c33dd027e119e3b6923c740e7b68da6f78cfb901040b4/logfire_api-5.2.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/e3/41/c55560304acbf4d9e3f9d55e9be424dfc486c8b65e9496c8a857efee3e17/pydantic_graph-2.59.0-py3-none-any.whl
 packages:
 - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
   build_number: 20
@@ -4909,39 +4916,125 @@ packages:
   requires_dist:
   - beautifulsoup4>=4.9,<5
   - six>=1.15,<2
-- pypi: https://files.pythonhosted.org/packages/19/26/0898ea1d9d652123777557180830cf9e9d874d63c6657264bec2d394a1f8/tau_ai-0.4.8-py3-none-any.whl
-  name: tau-ai
-  version: 0.4.8
-  sha256: b588eb065097c8094d21479def4ffac4b0d5ea60acc30de9193df0fe75a77238
+- pypi: https://files.pythonhosted.org/packages/26/83/d2fbd2e4e3afb1167daa825187d196f313cbaa1a4768f311fb041bb0e3d2/regex-2026.9.29-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+  name: regex
+  version: 2026.9.29
+  sha256: 39ab5894d971f9ac68baa6eca5c50387db579cfcacf36ae8df3feceb1815e6d0
+  requires_python: '>=3.10'
+- pypi: https://files.pythonhosted.org/packages/41/5a/b6b7d55148d367d07bcd3efdf24e3086ad199ea5109d0c335a872dfaac95/genai_prices-0.1.13-py3-none-any.whl
+  name: genai-prices
+  version: 0.1.13
+  sha256: 6d2b40760a2f7f5e207bac9b98de0af80e60c58ead497872a5331a7cee610477
   requires_dist:
-  - anyio>=4.0
-  - httpx[socks]>=0.27
-  - packaging>=24.0
-  - pillow>=11.0
-  - pydantic>=2.11
-  - pygments>=2.18
-  - rich>=13.0
-  - textual>=8.2.8
-  - typer>=0.12
-  requires_python: '>=3.12'
+  - httpx2>=2.0
+  - pydantic>=2.10
+  - pydantic-settings>=2.11 ; extra == 'cli'
+  - rich-argparse>=1.7.2 ; extra == 'cli'
+  - rich>=14.3.2 ; extra == 'cli'
+  requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/49/ca/f639c80449997b88aba7bc9705d25dd76cc0844f45f187862fd8f8bb18fa/soupsieve-3.0.3-py3-none-any.whl
   name: soupsieve
   version: 3.0.3
   sha256: fa30e3ba4809cb81ce1f3209f2fbe3e779fc445f0439bc147a0d7c4601743f21
   requires_python: '>=3.11.5'
+- pypi: https://files.pythonhosted.org/packages/51/11/9976ad86980a00cdef05e730a0127a2578a1bc6d11644d8d47246de2eb26/tiktoken-0.14.0-cp312-cp312-manylinux_2_28_x86_64.whl
+  name: tiktoken
+  version: 0.14.0
+  sha256: 7896eea257fe497a2b7134474d909156c6744ce8da35bce88011a960e008aa0d
+  requires_dist:
+  - regex
+  - requests
+  - blobfile>=3 ; extra == 'blobfile'
+  requires_python: '>=3.9'
 - pypi: https://files.pythonhosted.org/packages/53/a1/1681dfa1c904d4e3e72e51b55a0ff012d50b766843ef832d584abe2113c6/nvidia_ml_py-13.615.71-py3-none-any.whl
   name: nvidia-ml-py
   version: 13.615.71
   sha256: 959bf4adf6fe1308e4bd739e722236b0d1ec8392e2cefad33ff70c311380b9b6
-- pypi: https://files.pythonhosted.org/packages/63/34/ba1c580383c9eada3711951fef0795c80b829a078d72188184bcab9dd527/packaging-26.3-py3-none-any.whl
-  name: packaging
-  version: '26.3'
-  sha256: d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c
-  requires_python: '>=3.9'
-- pypi: https://files.pythonhosted.org/packages/6c/8a/1d8cb3842909dc193a73835adedf412e32e18f8ffd59f43983949622fe6f/platformdirs-4.13.5-py3-none-any.whl
-  name: platformdirs
-  version: 4.13.5
-  sha256: 53d3ec4280b815c1e0b02edad7f9ee8fda1ba9c0865dd9c2e6e63849ce82fc1e
+- pypi: https://files.pythonhosted.org/packages/73/79/d8c8cb808b69a6f286bc8bab6bab832c1da98163ab37689bfd5208508f25/pydantic_ai_slim-2.59.0-py3-none-any.whl
+  name: pydantic-ai-slim
+  version: 2.59.0
+  sha256: b4bc3a659176f616ad1a104cb8faed33c1565b449cb16226c6f6adb0c674770f
+  requires_dist:
+  - anyio>=4.7.0
+  - genai-prices>=0.1.13
+  - griffelib>=2.0
+  - httpx2>=2.7
+  - opentelemetry-api>=1.28.0
+  - pydantic-graph==2.59.0
+  - pydantic>=2.12
+  - typing-inspection>=0.4.0
+  - ag-ui-protocol>=0.1.10,<1 ; extra == 'ag-ui'
+  - starlette>=0.46.2 ; extra == 'ag-ui'
+  - anthropic>=1.12.1 ; extra == 'anthropic'
+  - boto3>=1.42.63 ; extra == 'bedrock'
+  - botocore>=1.42.63 ; extra == 'bedrock-mantle'
+  - openai>=3.26.0 ; extra == 'bedrock-mantle'
+  - openai>=3.26.0 ; extra == 'cerebras'
+  - argcomplete>=3.5.0 ; extra == 'cli'
+  - prompt-toolkit>=3 ; extra == 'cli'
+  - pyperclip>=1.9.0 ; extra == 'cli'
+  - pyyaml>=6.0.2 ; extra == 'cli'
+  - rich>=13 ; extra == 'cli'
+  - cohere>=5.20.6 ; sys_platform != 'emscripten' and extra == 'cohere'
+  - openai>=3.26.0 ; extra == 'crusoe'
+  - dbos>=2.10.0 ; extra == 'dbos'
+  - ddgs>=9.0.0 ; extra == 'duckduckgo'
+  - websockets>=14.0 ; extra == 'elevenlabs-agents-realtime'
+  - openai>=3.26.0 ; extra == 'elevenlabs-realtime'
+  - tiktoken>=0.12.0 ; extra == 'elevenlabs-realtime'
+  - websockets>=14.0 ; extra == 'elevenlabs-realtime'
+  - pydantic-evals==2.59.0 ; extra == 'evals'
+  - exa-py>=2.0.0 ; extra == 'exa'
+  - google-genai>=2.30.0 ; extra == 'google'
+  - google-genai>=2.30.0 ; extra == 'google-realtime'
+  - websockets>=14.0 ; extra == 'google-realtime'
+  - groq>=0.25.0 ; extra == 'groq'
+  - hf-xet<1.5.0 ; (platform_machine == 'AMD64' and extra == 'huggingface') or (platform_machine == 'aarch64' and extra == 'huggingface') or (platform_machine == 'amd64' and extra == 'huggingface') or (platform_machine == 'arm64' and extra == 'huggingface') or (platform_machine == 'x86_64' and extra == 'huggingface')
+  - huggingface-hub>=1.3.4,<2.0.0 ; extra == 'huggingface'
+  - logfire[httpx]>=4.39.0 ; extra == 'logfire'
+  - opentelemetry-instrumentation-httpx>=0.65b0 ; extra == 'logfire'
+  - fastmcp-slim[client]>=3.3.0,<5 ; extra == 'mcp'
+  - fastmcp-slim[client]>=4.0.0b1,<5 ; extra == 'mcp-tasks'
+  - fastmcp-tasks>=4.0.0b1,<5 ; extra == 'mcp-tasks'
+  - mistralai>=2.9.2 ; extra == 'mistral'
+  - openai>=3.26.0 ; extra == 'openai'
+  - tiktoken>=0.12.0 ; extra == 'openai'
+  - openai>=3.26.0 ; extra == 'openai-realtime'
+  - tiktoken>=0.12.0 ; extra == 'openai-realtime'
+  - websockets>=14.0 ; extra == 'openai-realtime'
+  - openai>=3.26.0 ; extra == 'openrouter'
+  - prefect>=3.7.5 ; extra == 'prefect'
+  - websockets>=14.0 ; extra == 'realtime'
+  - httpx>=0.27 ; extra == 'retries'
+  - tenacity>=8.2.3 ; extra == 'retries'
+  - sentence-transformers>=5.2.0 ; python_full_version < '3.14' and extra == 'sentence-transformers'
+  - openai>=3.26.0 ; extra == 'snowflake'
+  - pydantic-handlebars>=0.1.0 ; extra == 'spec'
+  - pyyaml>=6.0.2 ; extra == 'spec'
+  - tavily-python>=0.5.0 ; extra == 'tavily'
+  - temporalio>=1.27.0 ; extra == 'temporal'
+  - typesafe-sdk>=0.6.0 ; extra == 'typesafe'
+  - starlette>=0.46.2 ; extra == 'ui'
+  - voyageai>=0.3.7 ; python_full_version < '3.14' and extra == 'voyageai'
+  - starlette>=1.3.1 ; extra == 'web'
+  - uvicorn>=0.38.0 ; extra == 'web'
+  - markdownify>=1.2 ; extra == 'web-fetch'
+  - xai-sdk>=1.16.0 ; extra == 'xai'
+  - openai>=3.26.0 ; extra == 'xai-realtime'
+  - tiktoken>=0.12.0 ; extra == 'xai-realtime'
+  - websockets>=14.0 ; extra == 'xai-realtime'
+  - xai-sdk>=1.16.0 ; extra == 'xai-realtime'
+  - openai>=3.26.0 ; extra == 'zai'
+  requires_python: '>=3.11'
+- pypi: https://files.pythonhosted.org/packages/7e/28/bb989a55ac56dabf30765d2e7ea0710c032d9b67d8a7599f91fdcb2e00b1/griffelib-2.4.0-py3-none-any.whl
+  name: griffelib
+  version: 2.4.0
+  sha256: 0a7db47b0bdf5123a6ceca2f71aa996742a4f04d9048046778f4a9006772d27f
+  requires_dist:
+  - prune-source>=0.1.6 ; extra == 'faster'
+  - pip>=24.0 ; extra == 'pypi'
+  - platformdirs>=4.2 ; extra == 'pypi'
+  - wheel>=0.42 ; extra == 'pypi'
   requires_python: '>=3.11'
 - pypi: https://files.pythonhosted.org/packages/88/c6/92fcd42f1ba33e1184263f25bfabf3d27c383410470f169e4b8163bf9c17/beautifulsoup4-4.15.0-py3-none-any.whl
   name: beautifulsoup4
@@ -4956,83 +5049,23 @@ packages:
   - html5lib ; extra == 'html5lib'
   - lxml ; extra == 'lxml'
   requires_python: '>=3.7.0'
-- pypi: https://files.pythonhosted.org/packages/a5/69/6da5581c6a7fede7dc261bf4e67d6adca4196f176b43288b55b3db395b6e/mdit_py_plugins-0.6.1-py3-none-any.whl
-  name: mdit-py-plugins
-  version: 0.6.1
-  sha256: 214c82fb2ac524472ab6a5bcab1de80f73b50443e187f401bfd77efbc7c6481d
-  requires_dist:
-  - markdown-it-py>=2.0.0,<5.0.0
-  - pre-commit ; extra == 'code-style'
-  - myst-parser ; extra == 'rtd'
-  - sphinx-book-theme ; extra == 'rtd'
-  - coverage ; extra == 'testing'
-  - pytest ; extra == 'testing'
-  - pytest-cov ; extra == 'testing'
-  - pytest-regressions ; extra == 'testing'
-  - pytest-timeout ; extra == 'testing'
-  requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl
   name: six
   version: 1.17.0
   sha256: 4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274
   requires_python: '>=2.7,!=3.0.*,!=3.1.*,!=3.2.*'
-- pypi: https://files.pythonhosted.org/packages/e6/99/fdf65cc539e266ab93546c261bdf98411fe165c6e4e13f9dbf597097192b/pillow-13.0.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
-  name: pillow
-  version: 13.0.0
-  sha256: 42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca
+- pypi: https://files.pythonhosted.org/packages/b9/5a/cd2d6e41b04c932c33dd027e119e3b6923c740e7b68da6f78cfb901040b4/logfire_api-5.2.0-py3-none-any.whl
+  name: logfire-api
+  version: 5.2.0
+  sha256: f4bd56df590ba7e7a32adb0302c82af38dc4edb9eecd03b1bfa03ffa581eecf8
+  requires_python: '>=3.10'
+- pypi: https://files.pythonhosted.org/packages/e3/41/c55560304acbf4d9e3f9d55e9be424dfc486c8b65e9496c8a857efee3e17/pydantic_graph-2.59.0-py3-none-any.whl
+  name: pydantic-graph
+  version: 2.59.0
+  sha256: cf8b699f7322690590345028191c7e5ced9e57606c026f2480f90dc9665f176f
   requires_dist:
-  - furo ; extra == 'docs'
-  - olefile ; extra == 'docs'
-  - sphinx>=8.2 ; extra == 'docs'
-  - sphinx-autobuild ; extra == 'docs'
-  - sphinx-copybutton ; extra == 'docs'
-  - sphinx-inline-tabs ; extra == 'docs'
-  - sphinxext-opengraph ; extra == 'docs'
-  - olefile ; extra == 'fpx'
-  - olefile ; extra == 'mic'
-  - arro3-compute ; extra == 'test-arrow'
-  - arro3-core ; extra == 'test-arrow'
-  - nanoarrow ; extra == 'test-arrow'
-  - pyarrow ; extra == 'test-arrow'
-  - coverage>=7.4.2 ; extra == 'tests'
-  - defusedxml ; extra == 'tests'
-  - markdown2 ; extra == 'tests'
-  - olefile ; extra == 'tests'
-  - packaging ; extra == 'tests'
-  - psutil ; (sys_platform == 'darwin' and extra == 'tests') or (sys_platform == 'linux' and extra == 'tests')
-  - pytest ; extra == 'tests'
-  - pytest-cov ; extra == 'tests'
-  - pytest-timeout ; extra == 'tests'
-  - pytest-xdist ; extra == 'tests'
-  - setuptools ; extra == 'tests'
-  - trove-classifiers>=2024.10.12 ; extra == 'tests'
-  - defusedxml ; extra == 'xmp'
+  - anyio>=4.7.0
+  - logfire-api>=3.14.1
+  - pydantic>=2.12
+  - typing-inspection>=0.4.0
   requires_python: '>=3.11'
-- pypi: https://files.pythonhosted.org/packages/fb/be/35261223d9416a0751cdff1c7b4a6f881387218a12d439fe22fefebc8c04/textual-8.2.8-py3-none-any.whl
-  name: textual
-  version: 8.2.8
-  sha256: 267375fd402dc8d981457212efa71f0e3365fd17bba144ba9bb3ed7563cb374a
-  requires_dist:
-  - markdown-it-py[linkify]>=2.1.0
-  - mdit-py-plugins
-  - platformdirs>=3.6.0,<5
-  - pygments>=2.19.2,<3.0.0
-  - rich>=14.2.0
-  - tree-sitter>=0.25.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-bash>=0.23.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-css>=0.23.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-go>=0.23.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-html>=0.23.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-java>=0.23.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-javascript>=0.23.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-json>=0.24.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-markdown>=0.3.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-python>=0.23.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-regex>=0.24.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-rust>=0.23.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-sql>=0.3.11 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-toml>=0.6.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-xml>=0.7.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - tree-sitter-yaml>=0.6.0 ; python_full_version >= '3.10' and extra == 'syntax'
-  - typing-extensions>=4.4.0,<5.0.0
-  requires_python: '>=3.9,<4.0'
