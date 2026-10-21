@@ -26,7 +26,7 @@ for profile in $PROFILES; do
     PROFILE_ARGS="$PROFILE_ARGS --profile $profile"
 done
 
-docker compose $PROFILE_ARGS up -d
+docker compose --env-file ../.env -f docker-compose.yml $PROFILE_ARGS up -d
 
 echo -e "\n=== Waiting for services ==="
 sleep 3

@@ -6,7 +6,7 @@ cd "$(dirname "$0")"
 echo -e "\n=== parallax.observer Status ==="
 
 echo -e "\n--- Containers ---"
-docker ps --filter "name=prlx-" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null || echo "No containers found"
+docker compose --env-file ../.env -f docker-compose.yml ps --filter "name=prlx-" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null || echo "No containers found"
 
 echo -e "\n--- Network ---"
 docker network ls | grep prlx-lab || echo "prlx-lab network not found"

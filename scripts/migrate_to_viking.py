@@ -40,6 +40,8 @@ from openviking_sdk import SyncHTTPClient
 FACTS_DIR = Path("facts")
 DEFAULT_WORKSPACE = Path("memory/openviking")
 DEFAULT_SERVER = os.environ.get("OPENVIKING_URL", "http://localhost:1933")
+API_KEY = os.environ.get("OPENVIKING_API_KEY", "")
+ACCOUNT = os.environ.get("OPENVIKING_ACCOUNT", "")
 
 # tier name -> (source folder, is the naming already OpenViking style)
 TIERS = {
@@ -89,7 +91,7 @@ def copy_wisdom(source: Path, target: Path, already_named: bool) -> int:
     return copied
 
 
-def migrate(tier: str, workspace: Path, dry_run: bool) -> int:
+def migrate(tier: str, workspace: Path, user: str, dry_run: bool) -> int:
     """Copy one tier of the corpus into the workspace."""
     source_folder, already_named = TIERS[tier]
     source_root = FACTS_DIR / source_folder
@@ -98,7 +100,11 @@ def migrate(tier: str, workspace: Path, dry_run: bool) -> int:
         return 0
 
     account = find_account(workspace)
-    target_root = workspace / "viking" / account / "resources" / tier
+    # the corpus lives in the user namespace, because that is the only
+    # namespace a user key is allowed to read and reindex
+    target_root = (
+        workspace / "viking" / account / "user" / user / "resources" / tier
+    )
 
     if dry_run:
         print(f"  would write to {target_root}")
@@ -129,11 +135,19 @@ def migrate(tier: str, workspace: Path, dry_run: bool) -> int:
     return wisdoms
 
 
-def reindex(server: str, workspace: Path, tier: str, user: str) -> None:
+def reindex(
+    server: str, workspace: Path, tier: str, user: str, api_key: str, account: str
+) -> None:
     """Rebuild the vector index for one tier."""
     root = f"viking://resources/{tier}"
 
-    client = SyncHTTPClient(url=server, api_key="", user=user, timeout=1800.0)
+    client = SyncHTTPClient(
+        url=server,
+        api_key=api_key,
+        user=user,
+        account=account,
+        timeout=1800.0,
+    )
     client.initialize()
 
     print(f"  reindexing {root} (vectors only)")
@@ -159,6 +173,8 @@ def main() -> int:
     parser.add_argument("--workspace", default=str(DEFAULT_WORKSPACE))
     parser.add_argument("--server", default=DEFAULT_SERVER)
     parser.add_argument("--user", default="default")
+    parser.add_argument("--api-key", default=API_KEY)
+    parser.add_argument("--account", default=ACCOUNT)
     parser.add_argument("--tier", choices=[*TIERS, "all"], default="all")
     parser.add_argument("--reindex", action="store_true", help="rebuild the vectors after")
     parser.add_argument("--dry-run", action="store_true")
@@ -174,7 +190,7 @@ def main() -> int:
 
     total = 0
     for tier in tiers:
-        total += migrate(tier, workspace, args.dry_run)
+        total += migrate(tier, workspace, args.user, args.dry_run)
 
     if args.dry_run:
         print(f"\ndry run, {total} wisdoms would be written")
@@ -182,7 +198,9 @@ def main() -> int:
 
     print()
     for tier in tiers:
-        reindex(args.server, workspace, tier, args.user)
+        reindex(
+            args.server, workspace, tier, args.user, args.api_key, args.account
+        )
 
     print("\ndone")
     return 0

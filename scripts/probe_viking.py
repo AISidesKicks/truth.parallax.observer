@@ -18,6 +18,8 @@ import sys
 from openviking_sdk import SyncHTTPClient
 
 DEFAULT_SERVER = os.environ.get("OPENVIKING_URL", "http://localhost:1933")
+API_KEY = os.environ.get("OPENVIKING_API_KEY", "")
+ACCOUNT = os.environ.get("OPENVIKING_ACCOUNT", "")
 
 DEFAULT_QUERIES = {
     "flat-earth": "why the earth is flat, water finds its level",
@@ -31,12 +33,19 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Probe the OpenViking server")
     parser.add_argument("--server", default=DEFAULT_SERVER)
     parser.add_argument("--user", default="default")
+    parser.add_argument("--api-key", default=API_KEY)
+    parser.add_argument("--account", default=ACCOUNT)
     parser.add_argument("--tier", default="knowledge", help="knowledge or enrichment")
     parser.add_argument("--query", help="one query instead of the built in set")
     parser.add_argument("--limit", type=int, default=3)
     args = parser.parse_args()
 
-    client = SyncHTTPClient(url=args.server, api_key="", user=args.user)
+    client = SyncHTTPClient(
+        url=args.server,
+        api_key=args.api_key,
+        user=args.user,
+        account=args.account,
+    )
     client.initialize()
 
     print(f"server: {args.server}")

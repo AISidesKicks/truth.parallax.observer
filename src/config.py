@@ -9,6 +9,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -56,7 +57,13 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     debug: bool = False
     phoenix_enabled: bool = False
-    otel_endpoint: str = "http://localhost:4317"
+    otel_endpoint: str = Field(
+        default="http://localhost:4317",
+        validation_alias=AliasChoices(
+            "OTEL_EXPORTER_OTLP_ENDPOINT",
+            "OTEL_ENDPOINT",
+        ),
+    )
 
     @property
     def profile_path(self) -> Path:
