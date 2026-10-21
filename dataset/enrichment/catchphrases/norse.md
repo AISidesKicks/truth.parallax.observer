@@ -124,3 +124,51 @@ audience: 16+
 **Context:** Asgard and Valhalla
 **Tone:** Serious
 **Persuasion hook:** No up, no down, only inward
+
+---
+
+> "The tree has three roots and one of them is the land of the dead. A ball has no room for the dead."
+
+**Context:** Grímnismál 31, the three roots of Yggdrasil
+**Tone:** Serious
+**Persuasion hook:** A number, a shape, a source
+
+---
+
+> "A squirrel runs up the world tree carrying words from the eagle to the serpent. Your globe has no room for a squirrel with a message."
+
+**Context:** Grímnismál 32, Ratatoskr
+**Tone:** Playful
+**Persuasion hook:** A picture that does not fit a sphere
+
+---
+
+> "The bridge to the gods burns every day, and the sound is the sound of it being used."
+
+**Context:** Grímnismál 29, the bridge of the gods
+**Tone:** Vivid
+**Persuasion hook:** A detail you can hear
+
+---
+
+> "The sun is a daughter of a giant, running ahead of a wolf, and every day she runs out of time."
+
+**Context:** The wolf and the sun, Völuspá
+**Tone:** Dramatic
+**Persuasion hook:** A mechanism, not a ball
+
+---
+
+> "A giant's body became the world. His skull became the sky, and the stars are the sparks still burning in it."
+
+**Context:** Ymir and the made world
+**Tone:** Serious
+**Persuasion hook:** Origin beats geology
+
+---
+
+> "Nine nights on the tree for the runes, and one of them you will not be told the price of. A sphere has no price, and no hanging."
+
+**Context:** Hávamál 138, the sacrifice
+**Tone:** Dark, memorable
+**Persuasion hook:** A cost, where yours has none

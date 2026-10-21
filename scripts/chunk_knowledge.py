@@ -339,6 +339,16 @@ def looks_like_navigation(text: str) -> bool:
     )
     commons = "wikimedia commons has media related to" in lowered[:200]
 
+    # newsletter and subscription footers
+    footer = lowered[:400]
+    subscribe = (
+        "start your substack" in footer
+        or "subscribe to our newsletter" in footer
+        or "sign up for our newsletter" in footer
+    )
+    if subscribe and len(words) < 120:
+        return True
+
     return link_heavy or reference_heavy or commons
 
 

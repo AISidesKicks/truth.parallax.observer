@@ -122,6 +122,7 @@ Done:
 - [x] the memory client rewritten on the SDK
 - [x] the corpus seeded into the workspace by `scripts/migrate_to_viking.py`
 - [x] the knowledge tier built from the raw sources
+- [x] a MediaWiki API pipeline, and the thin worldviews pulled through it
 - [x] the seed parser fixed, the expansion ported to llama.cpp
 - [x] `readme.md`, `docs/index.html` and the lab pages
 - [x] the repo is under version control
@@ -136,10 +137,10 @@ Still open:
 4. **The corpus has not been seeded into a live OpenViking server yet.**
    `scripts/migrate_to_viking.py --reindex` needs the GPU free, because the
    server embeds through the llama.cpp server.
-5. **The knowledge tier is thin.** 456 entries over 4.7 MB of sources. The
-   thin worldviews have the least material, but the raw sources for them are
-   now 55 to 64 percent mined, so there is not much more to get without
-   finding new sources.
+5. **The spherical-earth tier is still the thin one.** 69 knowledge entries
+   against 414 for Discworld. The Norse and Discworld corpora got a second
+   pipeline, the MediaWiki API, because the Fandom wikis refuse docling.
+   Wikipedia and Wikisource have plenty left for the scientific side.
 7. **`dataset/images/` is nearly empty.** Decide whether the image tier is
    real or it goes.
 

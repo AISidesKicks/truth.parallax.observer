@@ -156,6 +156,21 @@ The tier is built now. See below.
 
 ## What to build
 
+### 0. More sources for the thin worldviews - done
+
+The raw material for Norse and Discworld was thin, so it got a second
+pipeline. The MediaWiki API, not docling, because the Fandom wikis refuse a
+browser. 366 source files now, 6.7 MB, 323 of them pulled through the API.
+
+| Worldview | Before | After |
+|-----------|--------|-------|
+| discworld | 7 files, 0.5 MB | 257 files, 1.0 MB |
+| norse | 7 files, 0.7 MB | 80 files, 2.1 MB |
+
+The finds were the whole Poetic Edda in the Bellows translation, 32 poems
+with the scholarly notes, and the Discworld geography and culture from the
+L-Space wiki. Details in `plans/sources.md`.
+
 ### 1. A chunker for the raw sources - done
 
 `scripts/chunk_knowledge.py` splits the raw sources on headings and writes the
@@ -170,16 +185,16 @@ dataset/flat-earth/victorian/one-hundred-proofs.md
        .metadata.yaml  source_url, heading path, word count
 ```
 
-Result: 456 entries, about 220k words, split over six folders.
+Result: 1103 entries, about 496k words, split over six folders.
 
 | Folder | Entries |
 |--------|---------|
-| `flat-earth/biblical` | 77 |
-| `flat-earth/vedic` | 74 |
-| `flat-earth/victorian` | 57 |
-| `spherical-earth/scientific` | 86 |
-| `discworld/fictional` | 77 |
-| `norse/fictional` | 85 |
+| `discworld/fictional` | 414 |
+| `norse/fictional` | 370 |
+| `flat-earth/biblical` | 84 |
+| `flat-earth/vedic` | 112 |
+| `flat-earth/victorian` | 54 |
+| `spherical-earth/scientific` | 69 |
 
 Four things the chunker had to deal with:
 
@@ -248,13 +263,13 @@ pixi run python scripts/expand_enrichment.py --category quotes --resume
 The pipeline now talks to the OpenAI compatible endpoint instead of the dead
 Ollama `/api/generate`, so it runs against the llama.cpp server.
 
-Result: 514 wisdoms, all of them real content now.
+Result: 535 wisdoms, all of them real content now.
 
 | Category | Wisdoms | Per worldview |
 |----------|---------|---------------|
 | misleading-facts | 400 | 100 |
-| quotes | 56 | 11 to 18 |
-| catchphrases | 58 | 14 to 15 |
+| quotes | 65 | 11 to 27 |
+| catchphrases | 70 | 14 to 21 |
 
 The catchphrase tier was the thin one. It had 3 to 4 per worldview, because the
 seeds only ever held 4, and one of those was already the same joke in

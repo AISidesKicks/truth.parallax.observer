@@ -124,3 +124,51 @@ audience: 16+
 **Context:** The Edge
 **Tone:** Serious
 **Persuasion hook:** The final word, delivered flat
+
+---
+
+> "Great A'Tuin swims. The disc is not a planet, it is a boat, and the boat moves through the sea."
+
+**Context:** The turtle and the disc
+**Tone:** Deadpan
+**Persuasion hook:** The mechanism, stated plainly
+
+---
+
+> "The Edge is three hundred miles from Ankh-Morpork. Three hundred miles of flat, and then the map stops."
+
+**Context:** The Edge and the maps
+**Tone:** Dry
+**Persuasion hook:** A distance you could walk
+
+---
+
+> "Two suns. One for the top and one for the bottom, and the shadows on the Discworld all point in."
+
+**Context:** The two suns
+**Tone:** Visual
+**Persuasion hook:** Shadows, the thing everyone can check
+
+---
+
+> "The elephants have names and opinions and nobody has ever asked what they are standing on."
+
+**Context:** The four elephants
+**Tone:** Provocative
+**Persuasion hook:** The gap in the model
+
+---
+
+> "Pratchett built Ankh-Morpork out of Prague and Florence and Seattle. And he put it on a disc, on purpose, and said so."
+
+**Context:** Ankh-Morpork and the Mapp
+**Tone:** Serious
+**Persuasion hook:** The author on the record
+
+---
+
+> "There is a continent out there and the Edge cuts it off, and the Edge is the end of everything, and the maps say so."
+
+**Context:** The Continent and the Edge
+**Tone:** Quiet
+**Persuasion hook:** The last line, delivered flat
