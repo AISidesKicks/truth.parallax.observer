@@ -126,6 +126,35 @@ truncation down to 128.
 
 Both are downloaded by `./fetch-models.sh` into `.models/llama`.
 
+## When the docker runtime cannot reach the GPU
+
+The nvidia container toolkit needs the driver userspace libraries to match
+the kernel module exactly. On this machine they do not, and every GPU
+container fails to start:
+
+```
+failed to fulfil mount request: open
+/usr/lib/x86_64-linux-gnu/libnvidia-gtk3.so.615.71.09: no such file or directory
+```
+
+That is a host problem. Until it is sorted, the same llama.cpp server runs
+natively from pixi:
+
+```bash
+# the preset with the host paths instead of the container paths
+sed "s|/models/|$PWD/.models/llama/|g" config/llama-models.ini > scratch/llama-models.local.ini
+
+pixi run -e native llama-server \
+  --host 127.0.0.1 --port 11433 \
+  --models-preset scratch/llama-models.local.ini \
+  --models-max 2 --models-autoload
+```
+
+The conda-forge build is a little older than the docker image and does not
+know the `gemma-embedding2` architecture, so the native path uses
+EmbeddingGemma 300M instead. Everything else is the same, router and
+presets included.
+
 ## GPU budget
 
 The chat model takes roughly 4.5 GB of VRAM, the embedding model roughly

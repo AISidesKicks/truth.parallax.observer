@@ -123,11 +123,24 @@ The app runs at **http://localhost:8668**.
 ### Working on the corpus
 
 ```bash
+# pull the wiki sources
+pixi run python scripts/extract_wiki.py --group all
+
 # rebuild the knowledge tier from the raw sources
-pixi run python scripts/chunk_knowledge.py
+pixi run python scripts/chunk_knowledge.py --clean
 
 # and generate the L0 and L1 summaries
 pixi run python scripts/chunk_knowledge.py --summarize --resume
+
+# seed it into the memory server and build the index
+pixi run python scripts/migrate_to_viking.py --reindex
+```
+
+### Running the app
+
+```bash
+pixi run python -m uvicorn src.main:app --host 0.0.0.0 --port 8668
+pixi run --environment experiment pytest -q
 ```
 
 ## Project structure
