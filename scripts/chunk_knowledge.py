@@ -40,6 +40,7 @@ SOURCE_GROUPS = {
     "flat-earth/victorian": ("flat-earth", "victorian"),
     "flat-earth/biblical": ("flat-earth", "biblical"),
     "flat-earth/vedic": ("flat-earth", "vedic"),
+    "flat-earth/modern": ("flat-earth", "modern"),
     "spherical-earth/scientific": ("spherical-earth", "scientific"),
     "fictional/discworld": ("discworld", "fictional"),
     "fictional/norse": ("norse", "fictional"),
