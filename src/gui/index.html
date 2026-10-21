@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>parallax.observer</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header id="monitor">
+  <div class="row"><span class="tag">LLM</span><span id="m-llm">connecting</span></div>
+  <div class="row"><span class="tag">GPU</span><span id="m-gpu">-</span></div>
+  <div class="row"><span class="tag">MEM</span><span id="m-mem">-</span></div>
+</header>
+
+<main>
+  <section id="setup" class="panel">
+    <h1>parallax.observer</h1>
+    <p class="sub">Earthify you! Guaranteed!!!</p>
+
+    <form id="setup-form">
+      <label for="alterego">Your name</label>
+      <input id="alterego" name="alterego" placeholder="Sam" autocomplete="off">
+
+      <label for="belief">What you believe</label>
+      <select id="belief" name="belief">
+        <option value="the Earth is flat">The Earth is flat</option>
+        <option value="the Earth is round">The Earth is round</option>
+        <option value="the Earth is a disc">The Earth is a disc</option>
+        <option value="the Earth has nine worlds">The Earth has nine worlds</option>
+      </select>
+
+      <label for="worldview">The world it will argue from</label>
+      <select id="worldview" name="worldview">
+        <option value="flat-earth">Flat Earth</option>
+        <option value="spherical-earth">Spherical Earth</option>
+        <option value="discworld">Discworld</option>
+        <option value="norse">Norse cosmology</option>
+      </select>
+
+      <button type="submit">Begin</button>
+    </form>
+
+    <p class="note">
+      The agent will use the corpus and nothing else. Every answer shows
+      which facts it reached for, and you can open them.
+    </p>
+  </section>
+
+  <section id="chat" class="panel hidden">
+    <div id="transcript"></div>
+
+    <div id="facts" class="hidden">
+      <h3>Facts used</h3>
+      <div id="fact-list"></div>
+    </div>
+
+    <form id="chat-form">
+      <span class="prompt">&gt;</span>
+      <input id="message" name="message" autocomplete="off" placeholder="say something" disabled>
+      <button type="button" id="agree" title="this one landed">agreed</button>
+      <button type="button" id="reject" title="this one did not land">no</button>
+    </form>
+
+    <div id="status">disconnected</div>
+  </section>
+</main>
+
+<template id="turn-template">
+  <div class="turn">
+    <div class="you"><span class="who">you</span><span class="text"></span></div>
+    <div class="agent">
+      <span class="who">agent</span>
+      <span class="meta"></span>
+      <div class="text"></div>
+    </div>
+  </div>
+</template>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
