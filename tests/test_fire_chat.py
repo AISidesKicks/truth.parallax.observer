@@ -37,6 +37,7 @@ class TypedLLM:
         )
         self.speeches: list[str] = []
         self.prompts: list[str] = []
+        self.model = "fake-model"
 
     async def chat(
         self,

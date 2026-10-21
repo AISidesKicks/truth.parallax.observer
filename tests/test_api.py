@@ -98,3 +98,45 @@ def test_the_websocket_closes_on_an_unknown_session(client: TestClient) -> None:
 
         with pytest.raises(WebSocketDisconnect):
             websocket.receive_json()
+
+
+async def test_a_fire_chat_debate_runs(client: TestClient, monkeypatch) -> None:
+    """Three sides, the stages, and a verdict."""
+    import json as json_module
+
+    from src.main import app
+    from tests.test_fire_chat import TypedLLM, WorldviewViking
+
+    # the real model server takes a minute for a whole debate, and the
+    # point of this test is the wiring, not the model
+    monkeypatch.setattr(app.state, "llm", TypedLLM(), raising=False)
+    monkeypatch.setattr(app.state, "viking", WorldviewViking(), raising=False)
+
+    created = client.post(
+        "/api/session", json={"alterego": "Sam", "belief": "the Earth is flat"}
+    ).json()
+
+    with client.websocket_connect(f"/ws/fire/{created['id']}") as websocket:
+        ready = websocket.receive_json()
+        assert ready["type"] == "ready"
+
+        websocket.send_json({"type": "start", "topic": "the shape of the Earth"})
+
+        speeches = []
+        stages = []
+        while True:
+            message = websocket.receive_json()
+            if message["type"] == "speech":
+                speeches.append(message["speech"])
+            elif message["type"] == "stage":
+                stages.append(message["stage"])
+            elif message["type"] == "verdict":
+                verdict = message["moderation"]
+                break
+            elif message["type"] == "error":
+                raise AssertionError(message["message"])
+
+    assert len(speeches) == 12
+    assert stages[:3] == ["opening"] * 3
+    assert "winner" in verdict
+    assert json_module.dumps(verdict)

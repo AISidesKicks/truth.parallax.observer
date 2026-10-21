@@ -18,6 +18,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from src.agentic.context import ContextManager
+from src.agentic.fire_chat import STAGE_ORDER, Debate, FireChat, Side, Stage
 from src.agentic.orchestrator import Orchestrator
 from src.config import get_settings
 from src.llm import LLMClient
@@ -319,6 +320,79 @@ async def chat(websocket: WebSocket, session_id: str) -> None:
         logger.info("session %s disconnected", session_id)
     except Exception:
         logger.exception("the websocket failed")
+
+
+@app.websocket("/ws/fire/{session_id}")
+async def fire_chat(websocket: WebSocket, session_id: str) -> None:
+    """The three way debate."""
+    await websocket.accept()
+
+    store: SessionStore = app.state.sessions
+    session = store.get(session_id)
+    if session is None:
+        await websocket.send_json({"type": "error", "message": "no such session"})
+        await websocket.close()
+        return
+
+    llm: LLMClient = app.state.llm
+    viking = app.state.viking
+
+    await websocket.send_json(
+        {"type": "ready", "session": session.to_dict(), "model": llm.model}
+    )
+
+    try:
+        while True:
+            raw = await websocket.receive_text()
+            try:
+                message = json.loads(raw)
+            except json.JSONDecodeError:
+                message = {"type": "start", "topic": raw}
+
+            if message.get("type") != "start":
+                continue
+
+            topic = (message.get("topic") or "").strip()
+            if not topic:
+                continue
+
+            worldviews = message.get("worldviews") or [
+                "spherical-earth",
+                "flat-earth",
+                "discworld",
+            ]
+            sides = [Side.from_worldview(world) for world in worldviews]
+
+            chat = FireChat(llm, viking)
+            debate = Debate(sides=sides)
+
+            for stage in STAGE_ORDER:
+                debate.stage = stage
+                if stage == Stage.JUDGMENT:
+                    break
+
+                for index, side in enumerate(sides):
+                    await websocket.send_json(
+                        {"type": "stage", "stage": str(stage), "speaker": side.name}
+                    )
+                    speech = await chat.speak(debate, side, stage, topic, index)
+                    debate.speeches.append(speech)
+                    await websocket.send_json(
+                        {"type": "speech", "speech": speech.to_dict()}
+                    )
+
+            debate.stage = Stage.JUDGMENT
+            debate.moderation = await chat.moderator.score(
+                debate.transcript, [side.name for side in sides]
+            )
+            await websocket.send_json(
+                {"type": "verdict", "moderation": debate.moderation.model_dump()}
+            )
+
+    except WebSocketDisconnect:
+        logger.info("the debate disconnected")
+    except Exception:
+        logger.exception("the debate failed")
 
 
 # ----------------------------------------------------------------------

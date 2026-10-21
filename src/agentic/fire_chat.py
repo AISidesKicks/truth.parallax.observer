@@ -164,7 +164,7 @@ class FireChat:
                 break
 
             for index, side in enumerate(sides):
-                speech = await self._speak(debate, side, stage, topic, index)
+                speech = await self.speak(debate, side, stage, topic, index)
                 debate.speeches.append(speech)
 
         debate.stage = Stage.JUDGMENT
@@ -174,7 +174,7 @@ class FireChat:
         )
         return debate
 
-    async def _speak(
+    async def speak(
         self,
         debate: Debate,
         side: Side,
