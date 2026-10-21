@@ -298,11 +298,12 @@ The seeds hold 4 catchphrases per worldview. That is too thin for the tier
 that carries the personality. Target 15 to 20 per worldview, and weight
 them towards Norse and Discworld.
 
-### 8. Make the image tier real, or drop it
+### 8. Make the image tier real - done
 
-Two options: finish the image download so the multimodal embedding model has
-something to embed, or delete `dataset/images/` and the SigLIP part of the
-plan. Half a feature is worse than none.
+Eleven images from Wikimedia Commons, embedded with the vision encoder and
+turned into knowledge entries with their captions and their vectors. The
+interface shows them. The details, and the two different dialects the
+embedding endpoints speak, are in `plans/sources.md`.
 
 ## Order of work
 
