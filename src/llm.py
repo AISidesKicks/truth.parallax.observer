@@ -117,6 +117,7 @@ class LLMClient:
         max_tokens: int = 1200,
         temperature: float = 0.8,
         api_key: str = "parallax-local",
+        instrument: bool = False,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.model = model
@@ -135,6 +136,10 @@ class LLMClient:
             provider=self._provider,
             settings={"max_tokens": max_tokens},
         )
+        if instrument:
+            from src.observability import instrument_model
+
+            self._model = instrument_model(self._model)
 
     # ------------------------------------------------------------------
     # Agents

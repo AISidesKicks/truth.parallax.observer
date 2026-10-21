@@ -22,6 +22,7 @@ from src.agentic.fire_chat import STAGE_ORDER, Debate, FireChat, Side, Stage
 from src.agentic.orchestrator import Orchestrator
 from src.config import get_settings
 from src.llm import LLMClient
+from src.observability import setup_tracing
 from src.session import SessionStore
 
 logger = logging.getLogger(__name__)
@@ -35,12 +36,16 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     logging.basicConfig(level=settings.log_level.upper())
 
+    if settings.phoenix_enabled:
+        setup_tracing(settings.otel_endpoint, enabled=True)
+
     llm = LLMClient(
         base_url=settings.llm_api_base,
         model=settings.llm_model,
         timeout=settings.llm_timeout,
         max_tokens=settings.llm_max_tokens,
         temperature=settings.llm_temperature,
+        instrument=settings.phoenix_enabled,
     )
 
     viking = None
