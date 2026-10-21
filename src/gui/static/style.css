@@ -241,3 +241,21 @@ button:hover { color: var(--text); border-color: var(--dim); }
   font-size: 12.5px;
   white-space: pre-wrap;
 }
+
+/* the live answer, while it is still coming */
+.turn.live .text {
+  color: var(--green);
+  opacity: 0.85;
+}
+
+.turn.live .meta .strategy {
+  color: var(--dim);
+}
+
+.turn.cut {
+  opacity: 0.6;
+}
+
+.turn.cut .meta .strategy {
+  color: var(--amber);
+}

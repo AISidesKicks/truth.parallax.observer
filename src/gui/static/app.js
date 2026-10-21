@@ -78,6 +78,11 @@ function connect() {
       state.session = data.session;
     } else if (data.type === "thinking") {
       showThinking(data.text);
+    } else if (data.type === "delta") {
+      streamDelta(data.text);
+    } else if (data.type === "interrupted") {
+      clearThinking();
+      markInterrupted();
     } else if (data.type === "reply") {
       clearThinking();
       showTurn(data.turn);
@@ -86,6 +91,34 @@ function connect() {
       setStatus("down", data.message);
     }
   };
+}
+
+/* the answer arrives a piece at a time */
+function streamDelta(text) {
+  let live = document.getElementById("live");
+
+  if (!live) {
+    clearThinking();
+    live = document.createElement("div");
+    live.id = "live";
+    live.className = "turn agent live";
+    live.innerHTML =
+      '<span class="who">agent</span><span class="meta">writing</span>' +
+      '<div class="text"></div>';
+    $("transcript").appendChild(live);
+  }
+
+  live.querySelector(".text").textContent += text;
+  scrollDown();
+}
+
+function markInterrupted() {
+  const live = document.getElementById("live");
+  if (!live) return;
+  live.classList.add("cut");
+  live.querySelector(".meta").innerHTML =
+    '<span class="strategy">interrupted</span> | the visitor spoke over it';
+  live.id = "";
 }
 
 function setStatus(cls, text) {
@@ -209,6 +242,7 @@ function send(verdict) {
   );
   $("message").value = "";
   $("message").focus();
+  $("message").placeholder = "speak over it if you like";
 }
 
 $("agree").addEventListener("click", () => {

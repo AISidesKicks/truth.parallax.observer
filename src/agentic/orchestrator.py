@@ -17,6 +17,7 @@ from src.agentic.context import ContextManager, Preserved
 from src.agentic.emotions import Emotion, EmotionState, persona_for
 from src.agentic.strategies import (
     Context,
+    Strategy,
     detect_agreement,
     detect_rejection,
     select_strategy,
@@ -220,6 +221,135 @@ class Orchestrator:
     # The turn
     # ------------------------------------------------------------------
 
+    async def stream_turn(
+        self,
+        message: str,
+        worldview: str,
+        alterego: str,
+        belief: str,
+        goal: str,
+        state: Context,
+        emotion_state: EmotionState,
+        history: list[dict[str, str]],
+        preserved: Preserved | None = None,
+        category: str | None = None,
+    ):
+        """One exchange, with the answer streamed as it comes.
+
+        Yields the text deltas as strings, and finishes with the Turn. The
+        caller can stop consuming at any point, which is how the visitor
+        interrupts the agent.
+        """
+        facts = await self.retrieve(message, worldview, category)
+        state.no_match = not facts
+        state.turn += 1
+
+        self._read_the_visitor(message, state, emotion_state)
+
+        strategy = select_strategy(state, [fact.to_dict() for fact in facts])
+        state.last_strategy = str(strategy)
+
+        if not facts:
+            # nothing in the corpus, so there is nothing to be persuasive
+            # with. A made up citation is the failure this lab is about.
+            turn = Turn(
+                user_message=message,
+                reply=NO_FACTS_REPLY,
+                strategy=str(strategy),
+                facts=[],
+                emotion=emotion_state.current,
+            )
+            yield NO_FACTS_REPLY
+            yield turn
+            return
+
+        prompt = self._prompt(
+            message, worldview, alterego, belief, goal, state, emotion_state, facts, strategy
+        )
+        conversation = await self.context.fit(
+            history, extra=prompt, summarizer=self.summarizer, preserved=preserved
+        )
+
+        text = ""
+        try:
+            async for delta in self.llm.stream_chat(
+                conversation, max_tokens=900
+            ):
+                text += delta
+                yield delta
+        except LLMError as exc:
+            logger.warning("the model gave nothing: %s", exc)
+            text = (
+                "I do not have anything on that. "
+                "Ask me something the material actually covers."
+            )
+            yield text
+
+        state.facts_used = [fact.uri for fact in facts]
+
+        yield Turn(
+            user_message=message,
+            reply=text,
+            strategy=str(strategy),
+            facts=facts,
+            emotion=emotion_state.current,
+            reasoning="",
+            tokens=0,
+            elapsed=0.0,
+        )
+
+    def _read_the_visitor(
+        self,
+        message: str,
+        state: Context,
+        emotion_state: EmotionState,
+    ) -> None:
+        """Work out how the visitor is reacting."""
+        if detect_agreement(message):
+            state.user_agreed = True
+            state.user_rejected = False
+            emotion_state.transition("agreed")
+        elif detect_rejection(message):
+            state.user_rejected = True
+            state.user_agreed = False
+            state.rejected_count += 1
+            state.defensive_score = min(1.0, state.defensive_score + 0.25)
+            emotion_state.transition("rejected")
+        else:
+            state.user_agreed = False
+            state.user_rejected = False
+            emotion_state.transition("question")
+
+    def _prompt(
+        self,
+        message: str,
+        worldview: str,
+        alterego: str,
+        belief: str,
+        goal: str,
+        state: Context,
+        emotion_state: EmotionState,
+        facts: list[RetrievedFact],
+        strategy: Strategy,
+    ) -> str:
+        """The prompt for one turn."""
+        persona = persona_for(worldview)
+        method = strategy_instructions(strategy, [fact.to_dict() for fact in facts])
+        material = self._material(facts, worldview)
+        goal_phrase = GOAL_PHRASE.get(worldview, goal)
+
+        return SPOKESPERSON_PROMPT.format(
+            voice=persona["voice"],
+            style_hint=persona["style"],
+            alterego=alterego,
+            belief=belief,
+            goal=goal_phrase,
+            mood=emotion_state.instructions(),
+            material=material,
+            method=method,
+            message=message,
+        )
+
     async def run_turn(
         self,
         message: str,
@@ -238,39 +368,13 @@ class Orchestrator:
         state.no_match = not facts
         state.turn += 1
 
-        if detect_agreement(message):
-            state.user_agreed = True
-            state.user_rejected = False
-            emotion_state.transition("agreed")
-        elif detect_rejection(message):
-            state.user_rejected = True
-            state.user_agreed = False
-            state.rejected_count += 1
-            state.defensive_score = min(1.0, state.defensive_score + 0.25)
-            emotion_state.transition("rejected")
-        else:
-            state.user_agreed = False
-            state.user_rejected = False
-            emotion_state.transition("question")
+        self._read_the_visitor(message, state, emotion_state)
 
         strategy = select_strategy(state, [fact.to_dict() for fact in facts])
         state.last_strategy = str(strategy)
 
-        persona = persona_for(worldview)
-        method = strategy_instructions(strategy, [fact.to_dict() for fact in facts])
-        material = self._material(facts, worldview)
-        goal_phrase = GOAL_PHRASE.get(worldview, goal)
-
-        prompt = SPOKESPERSON_PROMPT.format(
-            voice=persona["voice"],
-            style_hint=persona["style"],
-            alterego=alterego,
-            belief=belief,
-            goal=goal_phrase,
-            mood=emotion_state.instructions(),
-            material=material,
-            method=method,
-            message=message,
+        prompt = self._prompt(
+            message, worldview, alterego, belief, goal, state, emotion_state, facts, strategy
         )
 
         conversation = await self.context.fit(

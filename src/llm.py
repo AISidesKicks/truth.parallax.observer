@@ -223,6 +223,43 @@ class LLMClient:
             elapsed=elapsed,
         )
 
+    async def stream_chat(
+        self,
+        messages: list[dict[str, str]],
+        system: str = "",
+        max_tokens: int | None = None,
+        temperature: float | None = None,
+        history: list[dict[str, str]] | None = None,
+    ):
+        """One answer, streamed a piece at a time.
+
+        The reader sees the answer arriving, and can interrupt it while it
+        is still coming. Yields the text deltas.
+        """
+        import time
+
+        prompt = messages[-1]["content"] if messages else ""
+        agent = self.agent(system or "You are a helpful assistant.", temperature=temperature)
+
+        started = time.time()
+        text = ""
+        try:
+            async with agent.run_stream(
+                prompt,
+                message_history=to_message_history(history or []),
+            ) as result:
+                async for delta in result.stream_text(delta=True):
+                    text += delta
+                    yield delta
+        except Exception as exc:
+            self.stats.failures += 1
+            raise LLMError(f"the model did not answer: {exc}") from exc
+
+        elapsed = time.time() - started
+        self.stats.requests += 1
+        self.stats.total_seconds += elapsed
+        self.stats.latencies.append(elapsed)
+
     async def typed(
         self,
         system: str,

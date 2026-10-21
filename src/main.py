@@ -7,6 +7,7 @@ used.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from contextlib import asynccontextmanager, suppress
@@ -23,7 +24,7 @@ from src.agentic.orchestrator import Orchestrator
 from src.config import get_settings
 from src.llm import LLMClient
 from src.observability import setup_tracing
-from src.session import SessionStore
+from src.session import Session, SessionStore
 
 logger = logging.getLogger(__name__)
 
@@ -274,6 +275,8 @@ async def chat(websocket: WebSocket, session_id: str) -> None:
     )
 
     try:
+        turn_task: asyncio.Task | None = None
+
         while True:
             raw = await websocket.receive_text()
             try:
@@ -294,37 +297,76 @@ async def chat(websocket: WebSocket, session_id: str) -> None:
             if not text:
                 continue
 
-            await websocket.send_json({"type": "thinking", "text": text})
-
-            try:
-                turn = await orchestrator.run_turn(
-                    message=text,
-                    worldview=session.worldview,
-                    alterego=session.alterego,
-                    belief=session.belief,
-                    goal=session.goal,
-                    state=session.state,
-                    emotion_state=session.emotion,
-                    history=session.history,
-                    preserved=session.preserved(),
-                    category=message.get("category"),
-                )
-            except Exception as exc:
-                logger.exception("the turn failed")
+            if turn_task is not None and not turn_task.done():
+                # the visitor spoke over the agent, cut it off
+                turn_task.cancel()
+                with suppress(asyncio.CancelledError):
+                    await turn_task
                 await websocket.send_json(
-                    {"type": "error", "message": f"something went wrong: {exc}"}
+                    {"type": "interrupted", "text": text}
                 )
-                continue
 
-            success = message.get("agreed")
-            store.record_turn(session, turn, success=success)
-
-            await websocket.send_json({"type": "reply", "turn": turn.to_dict()})
+            await websocket.send_json({"type": "thinking", "text": text})
+            turn_task = asyncio.create_task(
+                _run_and_stream(
+                    websocket,
+                    orchestrator,
+                    store,
+                    session,
+                    text,
+                    message.get("category"),
+                )
+            )
 
     except WebSocketDisconnect:
         logger.info("session %s disconnected", session_id)
     except Exception:
         logger.exception("the websocket failed")
+
+
+async def _run_and_stream(
+    websocket: WebSocket,
+    orchestrator: Orchestrator,
+    store: SessionStore,
+    session: Session,
+    text: str,
+    category: str | None = None,
+) -> None:
+    """One turn, streamed to the socket."""
+    try:
+        turn = None
+        async for piece in orchestrator.stream_turn(
+            message=text,
+            worldview=session.worldview,
+            alterego=session.alterego,
+            belief=session.belief,
+            goal=session.goal,
+            state=session.state,
+            emotion_state=session.emotion,
+            history=session.history,
+            preserved=session.preserved(),
+            category=category,
+        ):
+            if isinstance(piece, str):
+                await websocket.send_json({"type": "delta", "text": piece})
+            else:
+                turn = piece
+
+        if turn is None:
+            return
+
+        store.record_turn(session, turn)
+        await websocket.send_json({"type": "reply", "turn": turn.to_dict()})
+
+    except asyncio.CancelledError:
+        logger.info("the turn was cut off")
+        raise
+    except Exception as exc:
+        logger.exception("the turn failed")
+        with suppress(Exception):
+            await websocket.send_json(
+                {"type": "error", "message": f"something went wrong: {exc}"}
+            )
 
 
 @app.websocket("/ws/fire/{session_id}")
