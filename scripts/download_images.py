@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 """
-Download reference images for the knowledge base.
+Download the reference images for the knowledge base.
 
-Features:
-- Rate limiting with random delays
-- Realistic browser user agent
-- Proper image file extension handling
+The images are the ones the lab argues about: the flat earth maps, the real
+Earth from orbit, Yggdrasil, the Discworld. They live on Wikimedia Commons,
+and the URLs are resolved through the Commons API, so a file that moves does
+not break the list.
+
+The list is deliberately short. An image tier is only worth having if it is
+real, and a tier of two files is worse than no tier at all.
 """
+
+from __future__ import annotations
 
 import argparse
 import logging
@@ -15,233 +20,202 @@ import sys
 import time
 from pathlib import Path
 
-import requests
+import httpx
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
+COMMONS_API = "https://commons.wikimedia.org/w/api.php"
+THUMB_WIDTH = 800
+
+# the commons api wants a descriptive agent, a browser one gets the robot
+# policy thrown at it
 USER_AGENTS = [
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (X11; Linux x86_64; rv:121.0) Gecko/20100101 Firefox/121.0",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "parallax-observer/1.0 (https://truth.parallax.observer; educational research) httpx",
+    "parallax-observer/1.0 (educational research project; contact via the site)",
 ]
 
-MIN_DELAY = 3.0
-MAX_DELAY = 8.0
+MIN_DELAY = 1.0
+MAX_DELAY = 2.5
 
+# name, commons file title, worldview, what it shows
 IMAGE_SOURCES = [
-    {
-        "name": "flat-earth-map",
-        "url": "https://upload.wikimedia.org/wikipedia/commons/2/2f/Flat_earth.png",
-        "category": "flat-earth",
-        "extension": "png",
-    },
-    {
-        "name": "ferguson-1893",
-        "url": "https://upload.wikimedia.org/wikipedia/commons/9/96/Orlando_Ferguson_flat_earth_map_edit.jpg",
-        "category": "flat-earth",
-        "extension": "jpg",
-    },
-    {
-        "name": "discworld-cover",
-        "url": "https://upload.wikimedia.org/wikipedia/commons/4/47/Terry_Pratchett_The_Colour_of_Magic.jpg",
-        "category": "discworld",
-        "extension": "jpg",
-    },
-    {
-        "name": "world-tree",
-        "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Yggdrasill.png/600px-Yggdrasill.png",
-        "category": "norse",
-        "extension": "png",
-    },
-    {
-        "name": "earth-from-space",
-        "url": "https://upload.wikimedia.org/wikipedia/commons/c/cb/The_Blue_Marble_%28remastered%29.jpg",
-        "category": "spherical-earth",
-        "extension": "jpg",
-    },
+    # --- flat earth ----------------------------------------------------
+    (
+        "flat-earth-map",
+        "File:Flat Earth.png",
+        "flat-earth",
+        "The classic flat earth map, the one that started the argument in 1895.",
+    ),
+    (
+        "ferguson-1893",
+        "File:Orlando-Ferguson-flat-earth-map edit.jpg",
+        "flat-earth",
+        "Orlando Ferguson's flat earth map, the one the Flat Earth Society still prints.",
+    ),
+    (
+        "azimuthal-projection",
+        "File:Flat Earth Map Azhimutal Projection.png",
+        "flat-earth",
+        "The azimuthal projection flat earth maps use, with the north pole in the middle.",
+    ),
+    (
+        "ferguson-portrait",
+        "File:Orlando Ferguson image in flat earth map.jpg",
+        "flat-earth",
+        "Orlando Ferguson himself, the man who drew the map.",
+    ),
+    # --- spherical earth ------------------------------------------------
+    (
+        "blue-marble",
+        "File:The Blue Marble, AS17-148-22727.jpg",
+        "spherical-earth",
+        "The Blue Marble, the whole Earth in one photograph from Apollo 17.",
+    ),
+    (
+        "earth-from-apollo",
+        "File:The Earth seen from Apollo 17.jpg",
+        "spherical-earth",
+        "The Earth from orbit, the curve that a flat model cannot produce.",
+    ),
+    # --- discworld ------------------------------------------------------
+    (
+        "discworld-emporium",
+        "File:Discworld Emporium Wincanton.jpg",
+        "discworld",
+        "The emporium in Ankh-Morpork, a city on a disc.",
+    ),
+    (
+        "rincephand-twoflower",
+        "File:Rincewind and Twoflower.jpg",
+        "discworld",
+        "Rincewind and Twoflower, the wizard and the tourist.",
+    ),
+    # --- norse ----------------------------------------------------------
+    (
+        "yggdrasil",
+        "File:Yggdrasil.jpg",
+        "norse",
+        "Yggdrasil, the world tree, with the nine worlds hung on its branches.",
+    ),
+    (
+        "ash-yggdrasil",
+        "File:The Ash Yggdrasil by Friedrich Wilhelm Heine.jpg",
+        "norse",
+        "The world tree as a drawing, with the worlds around the trunk.",
+    ),
+    (
+        "bagge-yggdrasil",
+        "File:Oluf Olufsen Bagge - Yggdrasil, The Mundane Tree 1847 - full page.jpg",
+        "norse",
+        "The mundane tree, drawn in 1847, nine worlds and all.",
+    ),
 ]
 
 
-def random_delay() -> None:
-    """Sleep for a random duration to avoid rate limiting."""
-    delay = random.uniform(MIN_DELAY, MAX_DELAY)
-    logger.debug(f"Waiting {delay:.2f}s before next request...")
-    time.sleep(delay)
+def resolve_url(client: httpx.Client, title: str, width: int = THUMB_WIDTH) -> str | None:
+    """The thumbnail url of a Commons file."""
+    try:
+        response = client.get(
+            COMMONS_API,
+            params={
+                "action": "query",
+                "titles": title,
+                "prop": "imageinfo",
+                "iiprop": "url",
+                "iiurlwidth": width,
+                "format": "json",
+                "formatversion": "2",
+            },
+        )
+        response.raise_for_status()
+        data = response.json()
+    except Exception as exc:
+        logger.error("could not resolve %s: %s", title, exc)
+        return None
 
+    pages = data.get("query", {}).get("pages", [])
+    if not pages or pages[0].get("missing"):
+        logger.warning("%s does not exist on commons", title)
+        return None
 
-def get_random_user_agent() -> str:
-    """Return a random browser user agent string."""
-    return random.choice(USER_AGENTS)
+    info = pages[0].get("imageinfo")
+    if not info:
+        logger.warning("%s has no image info", title)
+        return None
 
-
-def get_image_extension(url: str, content_type: str | None = None) -> str:
-    """Determine image file extension from URL or content type."""
-    if content_type:
-        if "png" in content_type:
-            return "png"
-        if "jpeg" in content_type or "jpg" in content_type:
-            return "jpg"
-        if "gif" in content_type:
-            return "gif"
-        if "webp" in content_type:
-            return "webp"
-    
-    url_lower = url.lower()
-    if url_lower.endswith(".png"):
-        return "png"
-    if url_lower.endswith(".jpg") or url_lower.endswith(".jpeg"):
-        return "jpg"
-    if url_lower.endswith(".gif"):
-        return "gif"
-    if url_lower.endswith(".webp"):
-        return "webp"
-    
-    return "png"
+    return info[0].get("thumburl") or info[0].get("url")
 
 
 def download_image(
     url: str,
     output_path: Path,
-    session: requests.Session | None = None,
+    client: httpx.Client,
+    min_bytes: int = 5000,
 ) -> bool:
-    """
-    Download an image from a URL.
-    
-    Args:
-        url: Image URL
-        output_path: Path to save the image
-        session: Optional requests session
-        
-    Returns:
-        True if download succeeded, False otherwise
-    """
-    logger.info(f"Downloading: {url}")
-    
-    if session is None:
-        session = requests.Session()
-    
-    headers = {"User-Agent": get_random_user_agent()}
-    
+    """Download one image."""
     try:
-        response = session.get(url, headers=headers, timeout=30, stream=True)
+        response = client.get(url, timeout=60, follow_redirects=True)
         response.raise_for_status()
-        
-        content_type = response.headers.get("Content-Type", "")
-        extension = get_image_extension(url, content_type)
-        
-        if output_path.suffix.lower() != f".{extension}":
-            output_path = output_path.with_suffix(f".{extension}")
-        
+
+        payload = response.content
+        if len(payload) < min_bytes:
+            logger.warning("%s is only %d bytes, skipping", url, len(payload))
+            return False
+
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        with open(output_path, "wb") as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                f.write(chunk)
-        
-        logger.info(f"Saved: {output_path}")
+        output_path.write_bytes(payload)
+        logger.info("saved %s (%d bytes)", output_path, len(payload))
         return True
-        
-    except Exception as e:
-        logger.error(f"Failed to download {url}: {e}")
+
+    except Exception as exc:
+        logger.error("failed %s: %s", url, exc)
         return False
 
 
-def download_batch(
-    sources: list[dict],
-    output_dir: Path,
-) -> tuple[int, int]:
-    """
-    Download multiple images with rate limiting.
-    
-    Args:
-        sources: List of source dictionaries
-        output_dir: Base output directory
-        
-    Returns:
-        Tuple of (success_count, failure_count)
-    """
-    session = requests.Session()
-    success = 0
-    failure = 0
-    
-    for i, source in enumerate(sources, 1):
-        logger.info(f"\n[{i}/{len(sources)}] Processing: {source['name']}")
-        
-        output_path = (
-            output_dir
-            / "images"
-            / source["category"]
-            / f"{source['name']}.{source['extension']}"
-        )
-        
-        if i > 1:
-            random_delay()
-        
-        if download_image(source["url"], output_path, session):
-            success += 1
-        else:
-            failure += 1
-    
-    return success, failure
-
-
-def main():
-    parser = argparse.ArgumentParser(
-        description="Download reference images for knowledge base"
-    )
-    parser.add_argument(
-        "--url",
-        help="Single image URL to download",
-    )
-    parser.add_argument(
-        "--output",
-        type=Path,
-        help="Output file path",
-    )
-    parser.add_argument(
-        "--category",
-        help="Image category (for batch mode)",
-    )
-    parser.add_argument(
-        "--output-dir",
-        type=Path,
-        default=Path("dataset"),
-        help="Output directory (default: dataset/)",
-    )
-    parser.add_argument(
-        "--list-sources",
-        action="store_true",
-        help="List available sources and exit",
-    )
-    
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Download the reference images")
+    parser.add_argument("--output-dir", type=Path, default=Path("dataset"))
+    parser.add_argument("--list-sources", action="store_true")
+    parser.add_argument("--force", action="store_true", help="download again if it exists")
     args = parser.parse_args()
-    
+
     if args.list_sources:
-        print("Image Sources:")
-        print("-" * 60)
-        for s in IMAGE_SOURCES:
-            print(f"  {s['name']:25} [{s['category']}]")
+        print("Image sources:")
+        print("-" * 78)
+        for name, title, worldview, caption in IMAGE_SOURCES:
+            print(f"  {name:<22} [{worldview:<16}] {caption}")
+            print(f"  {'':<22} {'':<16} {title}")
         return 0
-    
-    if args.url:
-        if not args.output:
-            parser.error("--url requires --output")
-        
-        success = download_image(args.url, args.output)
-        return 0 if success else 1
-    
-    logger.info(f"Starting batch download of {len(IMAGE_SOURCES)} images...")
-    
-    success, failure = download_batch(IMAGE_SOURCES, args.output_dir)
-    
-    logger.info(f"\nDownload complete: {success} succeeded, {failure} failed")
-    
-    return 0 if failure == 0 else 1
+
+    headers = {"User-Agent": random.choice(USER_AGENTS)}
+    success = 0
+    failed = 0
+
+    with httpx.Client(headers=headers) as client:
+        for index, (name, title, worldview, _caption) in enumerate(IMAGE_SOURCES, 1):
+            output_path = args.output_dir / "images" / worldview / f"{name}.jpg"
+
+            if output_path.exists() and not args.force:
+                logger.info("[%d/%d] %s already there", index, len(IMAGE_SOURCES), name)
+                success += 1
+                continue
+
+            if index > 1:
+                time.sleep(random.uniform(MIN_DELAY, MAX_DELAY))
+
+            url = resolve_url(client, title)
+            if not url:
+                failed += 1
+                continue
+
+            if download_image(url, output_path, client):
+                success += 1
+            else:
+                failed += 1
+
+    logger.info("done: %d succeeded, %d failed", success, failed)
+    return 0 if failed == 0 else 1
 
 
 if __name__ == "__main__":

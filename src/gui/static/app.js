@@ -171,15 +171,17 @@ function showFacts(facts) {
 
   $("facts").classList.remove("hidden");
   $("fact-list").innerHTML = facts
-    .map(
-      (fact) => `
+    .map((fact) => {
+      const picture = imageTag(fact.uri);
+      return `
       <div class="fact" data-uri="${fact.uri}">
+        ${picture}
         <div class="uri">${fact.uri}</div>
         <div class="score">score ${(fact.score || 0).toFixed(3)} | L${fact.level}</div>
         <div class="abstract">${fact.abstract || ""}</div>
         <div class="source hidden"></div>
-      </div>`
-    )
+      </div>`;
+    })
     .join("");
 
   $("fact-list")
@@ -187,6 +189,16 @@ function showFacts(facts) {
     .forEach((node) => {
       node.addEventListener("click", () => openFact(node));
     });
+}
+
+/* a fact about a picture gets the picture */
+function imageTag(uri) {
+  const match = /\/images\/([^/]+)$/.exec(uri || "");
+  if (!match) return "";
+  const worldview = /knowledge\/([^/]+)\//.exec(uri || "");
+  if (!worldview) return "";
+  const src = `/api/image?worldview=${encodeURIComponent(worldview[1])}&name=${encodeURIComponent(match[1])}`;
+  return `<img class="picture" src="${src}" alt="${match[1]}" loading="lazy">`;
 }
 
 /* open a fact and show where it came from */

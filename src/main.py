@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from src.agentic.context import ContextManager
@@ -208,6 +208,26 @@ async def fact(uri: str) -> JSONResponse:
         return JSONResponse({"error": str(exc)}, status_code=404)
 
     return JSONResponse(payload)
+
+
+@app.get("/api/image")
+async def image(worldview: str, name: str) -> JSONResponse:
+    """The picture of a fact, if it has one."""
+    if not worldview or not name:
+        return JSONResponse({"error": "worldview and name are needed"}, status_code=400)
+
+    if "/" in name or ".." in name or "/" in worldview or ".." in worldview:
+        return JSONResponse({"error": "no"}, status_code=400)
+
+    directory = Path("facts/knowledge") / worldview / "images" / name
+    if not directory.is_dir():
+        return JSONResponse({"error": "no such image"}, status_code=404)
+
+    for picture in sorted(directory.iterdir()):
+        if picture.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp", ".gif"}:
+            return FileResponse(picture, media_type=f"image/{picture.suffix.lstrip('.').lower()}")
+
+    return JSONResponse({"error": "no picture in it"}, status_code=404)
 
 
 # ----------------------------------------------------------------------

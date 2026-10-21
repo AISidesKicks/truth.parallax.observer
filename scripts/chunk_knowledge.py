@@ -67,6 +67,10 @@ JUNK_PATTERNS = [
     re.compile(r"^Jump to content$"),
     re.compile(r"^From Wikipedia, the free encyclopedia$"),
     re.compile(r"^\*\*Check out these other categories:\*\*$"),
+    re.compile(r"^-\s*v\s+-\s*t\s+-\s*e\s", re.I),
+    re.compile(r"^Retrieved from \"", re.I),
+    re.compile(r"^Categories\s*:?\s*$", re.I),
+    re.compile(r"^Hidden categories\s*:?\s*$", re.I),
     re.compile(r"^Main menu$"),
     re.compile(r"^Appearance$"),
     re.compile(r"^Personal tools$"),
@@ -420,7 +424,13 @@ def split_table_block(text: str) -> list[str]:
         body = "\n".join([*header, *rows])
         if start:
             body = f"rows {start + 1} to {start + len(rows)} of {len(data)}\n\n{body}"
-        parts.append(body)
+
+        # a single row can be enormous, so cut it on the cell boundary
+        if len(body) > MAX_CHUNK_CHARS:
+            for piece in split_table_rows(body, body.splitlines()):
+                parts.append(piece)
+        else:
+            parts.append(body)
 
     return parts
 
@@ -489,7 +499,7 @@ def chunk_file(path: Path, target: str, category: str, seen: set[str]) -> list[C
             if kind == "table":
                 blocks.extend(split_table_block(segment))
             else:
-                blocks.append(segment)
+                blocks.extend(split_long(segment))
 
         for block in blocks:
             block = clean_link_markup(block).strip()

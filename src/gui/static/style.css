@@ -259,3 +259,13 @@ button:hover { color: var(--text); border-color: var(--dim); }
 .turn.cut .meta .strategy {
   color: var(--amber);
 }
+
+.fact .picture {
+  display: block;
+  max-width: 100%;
+  max-height: 260px;
+  margin-bottom: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+}
