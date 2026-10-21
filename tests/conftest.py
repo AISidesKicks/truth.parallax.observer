@@ -6,6 +6,8 @@ clients are fakes that behave the way the real ones are supposed to.
 
 from __future__ import annotations
 
+import logging
+import os
 from typing import Any
 
 import pytest
@@ -16,6 +18,12 @@ from src.agentic.orchestrator import Orchestrator
 from src.agentic.strategies import Context
 from src.llm import LLMReply, LLMStats
 from src.session import SessionStore
+
+# The tracing exporter would try to reach the phoenix container, whose name
+# does not resolve from the host where the tests run.
+os.environ.setdefault("PHOENIX_ENABLED", "false")
+os.environ.setdefault("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
+logging.getLogger("opentelemetry.exporter.otlp").setLevel(logging.CRITICAL)
 
 
 class FakeLLM:

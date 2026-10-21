@@ -128,18 +128,22 @@ Done:
 - [x] the PersuChat slice, written from the BDD scenarios
 - [x] the corpus seeded and indexed in a live OpenViking server
 - [x] the app talking to the real model server and the real memory server
+- [x] the traces landing in Phoenix
+- [x] the gpu in the monitoring bar
+- [x] the fire chat debate, with the typed moderator
+- [x] the whole stack on the docker runtime, after the driver was fixed
 
 Still open:
 
-1. **The app has no observability yet.** Phoenix is in the compose, the
-   app does not send traces to it. PydanticAI has OpenTelemetry built in,
-   so this is an instrumentation call and a few lines.
-2. **The GPU monitor is not wired into the app.** `nvidia-ml-py` is a
-   dependency and the bar asks for it, but nothing fills it in.
-3. **The images.** `dataset/images/` still has two files in it. EmbeddingGemma
+1. **The images.** `dataset/images/` still has two files in it. EmbeddingGemma
    2 is multimodal, so it could be real now.
-4. **The lab view is half.** The facts open and the arguments are listed.
+2. **The lab view is half.** The facts open and the arguments are listed.
    The model panel is not there.
+3. **The steering queue.** The visitor can interrupt the agent mid answer.
+   Not built yet.
+4. **121 chunks are still too long to embed.** They are the giant wiki table
+   fragments. The chunker splits on the cell boundary now, but a few rows are
+   still wider than the 2048 token context of the embedding model.
 
 The chunks are no longer at the edge. They are 6000 characters, which fits
 the 2048 token context of the embedding model, and the tables are split into

@@ -87,6 +87,26 @@ Bellows translation with the scholarly notes intact. That is the primary
 source, not a summary of it, and it is the thing a flat Earth corpus can
 never have.
 
+## The tables
+
+Eleven of the sources are mostly markdown tables, and some of them are a
+single 300 KB line with the cells flattened together. The chunker now cuts
+the tables on the cell boundary and repeats the header in every chunk, so a
+table reads on its own:
+
+```
+| Title | Published | Transworld sub-series | ... |
+|-------|-----------|----------------------|-----|
+rows 11 to 20 of 42
+| 11 | ... | 2007 | Wizards | ...
+```
+
+The wiki link markup goes with it, `[*The Colour of Magic*](/wiki/The_Colour_of_Magic)`
+becomes `The Colour of Magic`.
+
+Twenty one chunks were pure whitespace, the cells were lost in the
+extraction. There is nothing in them, so they are dropped.
+
 ## Adding more
 
 ```bash

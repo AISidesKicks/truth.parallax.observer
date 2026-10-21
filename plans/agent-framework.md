@@ -158,13 +158,30 @@ decides what to look up.
   available without being a tool
 - `pydantic-graph` for the Fire Chat stage machine, if we want a formal one
 
-## What we do
+## What we do, and what is built
 
 ```
-src/agentic/orchestrator.py   stays, it is the pipeline
-src/llm.py                    becomes a PydanticAI agent factory
-src/agentic/moderator.py      new, a typed agent that scores the sides
-src/agentic/fire_chat.py      new, the stage machine
+src/agentic/orchestrator.py   stays, it is the pipeline, now async
+src/llm.py                    a PydanticAI agent factory, streaming and typed
+src/agentic/moderator.py      a typed agent that scores the sides
+src/agentic/fire_chat.py      the stage machine
+src/agentic/summarizer.py     the bridge between the model and the compressor
+src/observability.py          the otel exporter, pointed at phoenix
+```
+
+All of it is done. The agent loop is async, so the websocket does not block
+the event loop while the model thinks, and the corpus calls go through
+`asyncio.to_thread` because the OpenViking SDK is synchronous.
+
+The fire chat runs twelve speeches, four stages times three sides, and the
+moderator scores them from a validated pydantic model. A debate on this
+corpus with granite-4.0-h-tiny comes out with scores like this:
+
+```
+Round Earth          8.0
+Flat Earth           6.0
+Disc on Elephants   2.0
+winner: Round Earth
 ```
 
 The Viking client is a run context dependency. The personas stay a dict. The
