@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 from typing import Any
 
@@ -160,16 +160,46 @@ async def gpu() -> dict[str, Any]:
         memory = pynvml.nvmlDeviceGetMemoryInfo(handle)
         util = pynvml.nvmlDeviceGetUtilizationRates(handle)
         name = pynvml.nvmlDeviceGetName(handle)
+
+        temperature = 0
+        with suppress(Exception):
+            temperature = pynvml.nvmlDeviceGetTemperature(handle, pynvml.NVML_TEMPERATURE_GPU)
+
+        power = 0
+        with suppress(Exception):
+            power = pynvml.nvmlDeviceGetPowerUsage(handle) // 1000
+
         pynvml.nvmlShutdown()
         return {
             "name": name,
             "util": util.gpu,
             "memory_used_mb": memory.used // 1024 // 1024,
             "memory_total_mb": memory.total // 1024 // 1024,
-            "temperature": 0,
+            "temperature": temperature,
+            "power_watts": power,
         }
     except Exception as exc:
         return {"error": str(exc)}
+
+
+@app.get("/api/fact")
+async def fact(uri: str) -> JSONResponse:
+    """One fact, with its text, for the lab view."""
+    viking = app.state.viking
+    if viking is None:
+        return JSONResponse({"error": "the corpus is not reachable"}, status_code=503)
+
+    try:
+        payload = {
+            "uri": uri,
+            "abstract": viking.get_abstract(uri),
+            "overview": viking.get_overview(uri),
+            "content": viking.get_content(uri),
+        }
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=404)
+
+    return JSONResponse(payload)
 
 
 # ----------------------------------------------------------------------
