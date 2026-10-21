@@ -373,6 +373,88 @@ REFERENCE_HEADING = re.compile(
 )
 
 
+TABLE_SEPARATOR = re.compile(r"^\|[\s:|-]+\|$")
+WIKI_LINK = re.compile(r"\[\*([^\]]*)\]\([^)]*\)")
+PLAIN_LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+ROWS_PER_TABLE_CHUNK = 10
+
+
+def clean_link_markup(text: str) -> str:
+    """Turn wiki links back into plain text.
+
+    `[*Making Money*](/wiki/Making_Money)` is `Making Money`, and the
+    link target is noise in a table cell.
+    """
+    text = WIKI_LINK.sub(r"\1", text)
+    text = PLAIN_LINK.sub(r"\1", text)
+    return text
+
+
+def split_table_block(text: str) -> list[str]:
+    """A markdown table becomes chunks of rows, each with the header repeated.
+
+    A table with a header is split so every chunk can be read on its own.
+    A table without one, which is what docling leaves when the header was in
+    the previous section, becomes a plain list of rows.
+    """
+    lines = [line for line in text.splitlines() if line.strip()]
+    if not lines:
+        return []
+
+    header: list[str] = []
+    data = lines
+    for index, line in enumerate(lines):
+        if TABLE_SEPARATOR.match(line.strip()):
+            if index > 0:
+                header = [lines[index - 1]]
+            header.append(line)
+            data = lines[index + 1 :]
+            break
+
+    if not data:
+        return []
+
+    parts: list[str] = []
+    for start in range(0, len(data), ROWS_PER_TABLE_CHUNK):
+        rows = data[start : start + ROWS_PER_TABLE_CHUNK]
+        body = "\n".join([*header, *rows])
+        if start:
+            body = f"rows {start + 1} to {start + len(rows)} of {len(data)}\n\n{body}"
+        parts.append(body)
+
+    return parts
+
+
+def is_table_line(line: str) -> bool:
+    """Is this line part of a markdown table."""
+    return line.lstrip().startswith("|")
+
+
+def split_segments(text: str) -> list[tuple[str, str]]:
+    """Split a block into table runs and prose runs.
+
+    A markdown table is a contiguous run of pipe lines, and the tables sit
+    inside prose, not instead of it. So the block is cut on the boundaries
+    and each piece is handled on its own.
+    """
+    segments: list[tuple[str, str]] = []
+    current: list[str] = []
+    current_kind = ""
+
+    for line in text.splitlines():
+        kind = "table" if is_table_line(line) else "prose"
+        if kind != current_kind and current:
+            segments.append((current_kind, "\n".join(current)))
+            current = []
+        current_kind = kind
+        current.append(line)
+
+    if current:
+        segments.append((current_kind, "\n".join(current)))
+
+    return segments
+
+
 def chunk_file(path: Path, target: str, category: str, seen: set[str]) -> list[Chunk]:
     """Chunk one source file into knowledge entries.
 
@@ -393,7 +475,7 @@ def chunk_file(path: Path, target: str, category: str, seen: set[str]) -> list[C
 
     for heading, path_parts, text in split_headings(body):
         text = text.strip()
-        if len(text) < MIN_CHUNK_CHARS:
+        if len(text.strip()) < MIN_CHUNK_CHARS:
             continue
         if looks_like_navigation(text):
             continue
@@ -402,13 +484,19 @@ def chunk_file(path: Path, target: str, category: str, seen: set[str]) -> list[C
         if "mscelltype-navbody" in text.lower():
             continue
 
-        parts = split_long(text) if len(text) > MAX_CHUNK_CHARS else [text]
-
-        for part in parts:
-            if len(parts) > 1:
-                slug = slug_from_text(part, path.stem)
+        blocks: list[str] = []
+        for kind, segment in split_segments(text):
+            if kind == "table":
+                blocks.extend(split_table_block(segment))
             else:
-                slug = slugify(heading or path.stem, path.stem)
+                blocks.append(segment)
+
+        for block in blocks:
+            block = clean_link_markup(block).strip()
+            if len(block) < 200:
+                continue
+
+            slug = slugify(heading or path.stem, path.stem)
             if slug in seen:
                 suffix = 2
                 while f"{slug}-{suffix}" in seen:
@@ -421,13 +509,13 @@ def chunk_file(path: Path, target: str, category: str, seen: set[str]) -> list[C
                 Chunk(
                     heading=heading,
                     heading_path=heading_path,
-                    text=part,
+                    text=block,
                     slug=slug,
                     source_file=str(path),
                     source_url=source_url,
                     target=target,
                     category=category,
-                    word_count=len(part.split()),
+                    word_count=len(block.split()),
                 )
             )
 
@@ -444,7 +532,7 @@ def split_long(text: str) -> list[str]:
 
     # a markdown table splits on rows, the words inside a row do not separate
     if table_rows and len(table_rows) > len(lines) * 0.6:
-        return split_table(text, lines)
+        return split_table_rows(text, lines)
 
     sentences = SENTENCE_END.split(text)
     parts: list[str] = []
@@ -521,7 +609,7 @@ def cut_long_line(line: str) -> list[str]:
     return pieces
 
 
-def split_table(text: str, lines: list[str]) -> list[str]:
+def split_table_rows(text: str, lines: list[str]) -> list[str]:
     """Split a markdown table into groups of rows."""
     parts: list[str] = []
     current: list[str] = []
