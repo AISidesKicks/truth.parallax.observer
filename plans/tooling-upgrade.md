@@ -135,15 +135,25 @@ Done:
 
 Still open:
 
-1. **The images.** `dataset/images/` still has two files in it. EmbeddingGemma
-   2 is multimodal, so it could be real now.
-2. **The lab view is half.** The facts open and the arguments are listed.
-   The model panel is not there.
-3. **The steering queue.** The visitor can interrupt the agent mid answer.
-   Not built yet.
-4. **121 chunks are still too long to embed.** They are the giant wiki table
-   fragments. The chunker splits on the cell boundary now, but a few rows are
-   still wider than the 2048 token context of the embedding model.
+1. **The lab view is half.** The facts open, the arguments are listed and the
+   pictures show. The model panel is not there.
+2. **The image retrieval is by caption, not by picture.** The image vectors
+   are stored, but the corpus is indexed by the caption, which is how a human
+   would look for a picture anyway.
+3. **The steering queue is the websocket, not a queue.** The visitor can cut
+   the agent off, and the partial answer is kept. A real queue, where the
+   message waits and is picked up, is not built.
+
+Fixed since the last round:
+
+- The 121 chunks that would not embed are down to **zero**. It took five
+  things: a bug in the chunker where a rewrite dropped the length splitting,
+  a Wikipedia navbox that was one and a half megabytes wide, the embedding
+  context raised to 4096, eighty six runaway summaries capped, and a clean
+  drop before the reindex, because a vector rebuild re-embeds the fields the
+  records already hold.
+- The visitor can interrupt the agent mid answer.
+- The images are real, eleven of them, embedded with the vision encoder.
 
 The chunks are no longer at the edge. They are 6000 characters, which fits
 the 2048 token context of the embedding model, and the tables are split into

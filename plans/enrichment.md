@@ -300,6 +300,18 @@ them towards Norse and Discworld.
 
 ### 8. Make the image tier real - done
 
+Eleven images, embedded with the vision encoder of EmbeddingGemma 2, 768
+dimensions each, and each one a knowledge entry with its caption and its
+picture. The agent retrieves them by caption and the interface shows the
+picture.
+
+### 9. The summaries that ran away - done
+
+Eighty six of the L1 summaries were longer than the embedder would take, the
+worst of them two hundred and fifty nine kilobytes. They are capped now, at
+a sentence boundary, and the cap is applied when they are written so it
+cannot happen again.
+
 Eleven images from Wikimedia Commons, embedded with the vision encoder and
 turned into knowledge entries with their captions and their vectors. The
 interface shows them. The details, and the two different dialects the
