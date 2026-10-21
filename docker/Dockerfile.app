@@ -14,19 +14,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-RUN pip install --no-cache-dir \
-    fastapi>=0.115.0 \
-    uvicorn>=0.30.0 \
-    pydantic>=2.0.0 \
-    pydantic-settings>=2.0.0 \
-    python-dotenv>=1.0.0 \
-    pyyaml>=6.0 \
-    openai>=1.0.0 \
-    httpx>=0.27.0 \
-    rich>=13.0.0 \
-    psutil>=5.9.0 \
-    openviking-sdk>=0.1.16,<0.2 \
-    nvidia-ml-py>=12.535,<14
+COPY docker/requirements-app.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 RUN mkdir -p /app/models \
     /app/data \

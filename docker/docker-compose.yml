@@ -61,7 +61,7 @@ services:
       LLAMA_ARG_MODEL: "/models/${EMBED_MODEL_FILE:-embeddinggemma-2-Q8_0.gguf}"
       LLAMA_ARG_ALIAS: "${EMBED_MODEL_ALIAS:-embeddinggemma-2}"
       LLAMA_ARG_EMBEDDINGS: "1"
-      LLAMA_ARG_POOLING: "${EMBED_POOLING:-last}"
+      LLAMA_ARG_POOLING: "${EMBED_POOLING:-mean}"
       LLAMA_ARG_CTX_SIZE: "${EMBED_CTX_SIZE:-2048}"
       LLAMA_ARG_N_GPU_LAYERS: "${EMBED_N_GPU_LAYERS:-99}"
       # embeddings need n_batch == n_ubatch, otherwise the server lowers both
@@ -102,6 +102,7 @@ services:
     environment:
       OPENVIKING_CONFIG_FILE: /app/openviking.conf
       VIKING_WORKSPACE: /app/viking_data
+      OPENVIKING_ROOT_API_KEY: "${OPENVIKING_ROOT_API_KEY:-parallax-local}"
       VIKING_EMBEDDING_BASE: "${EMBEDDING_API_BASE:-http://prlx-llm:8080/v1}"
       VIKING_EMBEDDING_API_KEY: "${VIKING_EMBEDDING_API_KEY:-parallax-local}"
       VIKING_EMBEDDING_MODEL: "${EMBED_MODEL_ALIAS:-embeddinggemma-2}"
@@ -164,6 +165,9 @@ services:
       - EMBEDDING_MODEL=${EMBED_MODEL_ALIAS:-embeddinggemma-2}
       - EMBEDDING_DIMENSION=${EMBEDDING_DIMENSION:-768}
       - OPENVIKING_URL=http://prlx-viking:1933
+      - OPENVIKING_API_KEY=${OPENVIKING_API_KEY:-parallax-local}
+      - OPENVIKING_ACCOUNT=${OPENVIKING_ACCOUNT:-default}
+      - OPENVIKING_USER=${OPENVIKING_USER:-default}
       - OPENVIKING_WORKSPACE=/app/viking_data
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://prlx-phoenix:4317
       - PHOENIX_ENABLED=${PHOENIX_ENABLED:-true}
@@ -205,6 +209,9 @@ services:
       - EMBEDDING_MODEL=${EMBED_MODEL_ALIAS:-embeddinggemma-2}
       - EMBEDDING_DIMENSION=${EMBEDDING_DIMENSION:-768}
       - OPENVIKING_URL=http://prlx-viking:1933
+      - OPENVIKING_API_KEY=${OPENVIKING_API_KEY:-parallax-local}
+      - OPENVIKING_ACCOUNT=${OPENVIKING_ACCOUNT:-default}
+      - OPENVIKING_USER=${OPENVIKING_USER:-default}
       - OPENVIKING_WORKSPACE=/app/viking_data
       - DEBUG=true
       - LOG_LEVEL=DEBUG

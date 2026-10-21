@@ -18,7 +18,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-RUN pip install --no-cache-dir "openviking==0.5.1.1" && \
+COPY docker/requirements-viking.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt && \
     openviking-server --version
 
 RUN mkdir -p /app/viking_data /app/facts
