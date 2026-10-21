@@ -338,7 +338,7 @@ def looks_like_navigation(text: str) -> bool:
             return True
 
         # an index page, a list of short entries and almost no prose
-        lines = text.splitlines()
+        lines = [line for line in text.splitlines() if line.strip()]
         list_lines = [line for line in lines if re.match(r"^\s*[-*|]\s*\S", line)]
         prose_lines = [line for line in lines if line not in list_lines]
         prose_text = " ".join(prose_lines)
@@ -348,7 +348,9 @@ def looks_like_navigation(text: str) -> bool:
             and len(prose_text.split()) < 60
             and len(words) / max(len(text), 1) > 0.04
         )
-        return index_page
+        # a page that is nothing but a list, a disambiguation or a table
+        all_list = len(list_lines) >= 5 and len(list_lines) == len(lines)
+        return index_page or all_list
 
     internal = re.findall(r"\]\(/wiki/(?:template|special|wikipedia):", lowered)
     if len(internal) > 8 and len(internal) / len(words) > 0.15:

@@ -1,6 +1,6 @@
 # Source inventory
 
-Status: 366 source files, 6.7 MB, four worldviews.
+Status: 644 source files, 18 MB, four worldviews.
 
 ## Two ways in
 
@@ -22,16 +22,17 @@ their depth.
 
 ## What is in there
 
-| Folder | Files | KB | How |
-|--------|-------|-----|-----|
-| `dataset/flat-earth/biblical` | 7 | 1777 | docling |
-| `dataset/flat-earth/vedic` | 7 | 1192 | docling |
-| `dataset/flat-earth/victorian` | 7 | 181 | docling, Gutenberg and LoC scans |
-| `dataset/spherical-earth/scientific` | 8 | 432 | docling |
-| `dataset/fictional/discworld` | 257 | 1029 | MediaWiki API |
-| `dataset/fictional/norse` | 80 | 2065 | MediaWiki API |
+| Folder | Files | How |
+|--------|-------|-----|
+| `dataset/flat-earth/biblical` | 7 | docling |
+| `dataset/flat-earth/vedic` | 7 | docling |
+| `dataset/flat-earth/victorian` | 7 | docling, Gutenberg and LoC scans |
+| `dataset/flat-earth/modern` | 122 | MediaWiki API |
+| `dataset/spherical-earth/scientific` | 152 | docling and MediaWiki API |
+| `dataset/fictional/discworld` | 257 | MediaWiki API |
+| `dataset/fictional/norse` | 80 | MediaWiki API |
 
-366 files, 323 of them pulled through the wiki API.
+644 files, 611 of them pulled through the wiki API.
 
 ### The Discworld sources
 
@@ -43,6 +44,35 @@ their depth.
 257 files. Ankh-Morpork, Lancre, Sto Lat, the Sto Plains, the Klopenburg sun,
 the Edge, the Unseen University, the Patrician, the City Watch. The Discworld
 geography is a whole continent with a coastline, and now the corpus has it.
+
+### The Spherical Earth sources
+
+| Wiki | What was pulled |
+|------|-----------------|
+| `en.wikipedia.org` | Category:Geodesy, Category:Surveying, and 54 explicit pages on the measurement of the Earth |
+| `en.wikipedia.org` | Category:Flat Earth, the reference material for the fact checker |
+
+The geodesy pages are the history of actually measuring the thing. Eratosthenes
+in Alexandria, Picard in Picardy, Bouguer in Peru, La Perouse in the Pacific,
+Laplace in Paris, Bessel in Hamburg, the Everest expedition. Eratosthenes did
+it with a stick and a shadow in 200 BC and got it right to within a few
+percent. Newton worked out the shape from the way a spinning thing behaves.
+Then came the geodetic datum, the reference ellipsoid, the geoid, the
+benchmark, the theodolite, the spirit level, and now satellite laser ranging
+and very long baseline interferometry.
+
+### The modern Flat Earth sources
+
+| Wiki | What was pulled |
+|------|-----------------|
+| `wiki.tfes.org` | The Flat Earth Society wiki, 12 categories |
+| `en.wikipedia.org` | Category:Flat Earth |
+
+The Society wiki is the arguments in their own words, which is the point.
+Gravity, Perspective, Parallax, Optics, Rotation and Revolution, Form and
+Magnitude, General Physics, Historical Figures, Maps and Models, Celestial
+Mechanics, Cosmology, Literature. Airy's Failure is a whole page about the
+1871 experiment that is supposed to prove the Earth does not move.
 
 ### The Norse sources
 
@@ -78,6 +108,9 @@ batch is a wiki, a category or a list of page titles, and a target folder.
 
 The wikis rate limit hard. The fetcher waits 2.5 seconds between calls and
 backs off with an exponential delay when it gets a 429. Do not lower that.
+
+The `wiki.tfes.org` and `wiki.lspace.org` endpoints have no `/w/` in the
+path. Wikipedia and Wikisource do. That difference cost one wasted run.
 
 ## The images
 
