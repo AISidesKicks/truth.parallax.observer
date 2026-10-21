@@ -185,16 +185,16 @@ dataset/flat-earth/victorian/one-hundred-proofs.md
        .metadata.yaml  source_url, heading path, word count
 ```
 
-Result: 1103 entries, about 496k words, split over six folders.
+Result: 1052 entries, about 470k words, split over six folders.
 
 | Folder | Entries |
 |--------|---------|
-| `discworld/fictional` | 414 |
-| `norse/fictional` | 370 |
-| `flat-earth/biblical` | 84 |
-| `flat-earth/vedic` | 112 |
-| `flat-earth/victorian` | 54 |
-| `spherical-earth/scientific` | 69 |
+| `discworld/fictional` | 407 |
+| `norse/fictional` | 337 |
+| `flat-earth/biblical` | 82 |
+| `flat-earth/vedic` | 110 |
+| `flat-earth/victorian` | 51 |
+| `spherical-earth/scientific` | 65 |
 
 Four things the chunker had to deal with:
 

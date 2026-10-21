@@ -327,7 +327,27 @@ def looks_like_navigation(text: str) -> bool:
 
     words = text.split()
     if len(words) < 200:
-        return False
+        # a newsletter or subscription footer
+        footer = lowered[:400]
+        if (
+            "start your substack" in footer
+            or "subscribe to our newsletter" in footer
+            or "sign up for our newsletter" in footer
+        ):
+            return True
+
+        # an index page, a list of short entries and almost no prose
+        lines = text.splitlines()
+        list_lines = [line for line in lines if re.match(r"^\s*[-*|]\s*\S", line)]
+        prose_lines = [line for line in lines if line not in list_lines]
+        prose_text = " ".join(prose_lines)
+        index_page = (
+            len(list_lines) >= 2
+            and len(prose_lines) <= 2
+            and len(prose_text.split()) < 60
+            and len(words) / max(len(text), 1) > 0.04
+        )
+        return index_page
 
     internal = re.findall(r"\]\(/wiki/(?:template|special|wikipedia):", lowered)
     if len(internal) > 8 and len(internal) / len(words) > 0.15:
