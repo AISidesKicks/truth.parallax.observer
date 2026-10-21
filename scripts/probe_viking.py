@@ -60,7 +60,7 @@ def main() -> int:
 
     print("\n--- tree ---")
     try:
-        tree = client.tree(f"viking://resources/{args.tier}", level_limit=2, node_limit=40)
+        tree = client.tree(f"viking://~/resources/{args.tier}", level_limit=2, node_limit=40)
         print(json.dumps(tree, ensure_ascii=False, indent=2)[:2000])
     except Exception as exc:
         print(f"tree unavailable: {exc}")
@@ -72,7 +72,7 @@ def main() -> int:
         try:
             found = client.find(
                 query=query,
-                target_uri=f"viking://resources/{args.tier}/{worldview}/",
+                target_uri=f"viking://~/resources/{args.tier}/{worldview}/",
                 limit=args.limit,
                 options={"include_provenance": True},
             )

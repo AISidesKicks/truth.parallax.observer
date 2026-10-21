@@ -6,6 +6,7 @@ clients are fakes that behave the way the real ones are supposed to.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from typing import Any
@@ -55,6 +56,21 @@ class FakeLLM:
             completion_tokens=50,
             elapsed=0.1,
         )
+
+    async def stream_chat(
+        self,
+        messages: list[dict[str, str]],
+        system: str = "",
+        max_tokens: int | None = None,
+        temperature: float | None = None,
+        history: list[dict[str, str]] | None = None,
+    ):
+        """One answer, a piece at a time."""
+        self.calls.append(messages)
+        self.stats.requests += 1
+        for word in (self.replies.pop(0) if self.replies else "A considered answer.").split(" "):
+            yield word + " "
+            await asyncio.sleep(0)
 
     async def complete(self, prompt: str, **kwargs: Any) -> str:
         """A single prompt."""

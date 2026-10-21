@@ -52,6 +52,25 @@ MIN_CHUNK_CHARS = 400
 # about 8000 characters or the embedding call is rejected
 MAX_CHUNK_CHARS = 6000
 
+# the L1 summary is embedded too, and a model that runs away with it
+# produces a summary the embedder will not take
+MAX_OVERVIEW_CHARS = 5000
+
+
+def truncate_overview(text: str, limit: int = MAX_OVERVIEW_CHARS) -> str:
+    """Cut a runaway summary at a sentence boundary."""
+    text = text.strip()
+    if len(text) <= limit:
+        return text
+
+    cut = text[:limit]
+    for mark in (". ", ".\n", "!\n", "? "):
+        position = cut.rfind(mark)
+        if position > limit * 0.5:
+            return cut[: position + 1].strip()
+
+    return cut.strip()
+
 # room for the thinking tokens of a reasoning model, on top of the answer
 THINKING_BUDGET = 1500
 
@@ -830,8 +849,8 @@ async def summarize(
                                 marker="## Summary",
                             ),
                         )
-                        abstract_path.write_text(l0)
-                        overview_path.write_text(l1)
+                        abstract_path.write_text(truncate_overview(l0, 1200))
+                        overview_path.write_text(truncate_overview(l1))
                         break
                     except Exception as exc:
                         if attempt == retries:
@@ -845,6 +864,26 @@ async def summarize(
 
         await asyncio.gather(*(handle(chunk) for chunk in chunks))
     logger.info("summarize finished: %d done, %d failed", done, failed)
+
+
+def fix_long_overviews(limit: int = MAX_OVERVIEW_CHARS) -> int:
+    """Cut the summaries that ran away.
+
+    A model that writes a hundred paragraphs of insight produces something
+    the embedder will not take, and the entry silently goes missing from
+    the index.
+    """
+    fixed = 0
+    for path in sorted(KNOWLEDGE_DIR.rglob(".overview.md")):
+        text = path.read_text(errors="replace")
+        if len(text) <= limit:
+            continue
+        path.write_text(truncate_overview(text, limit))
+        fixed += 1
+
+    if fixed:
+        logger.info("cut %d runaway summaries", fixed)
+    return fixed
 
 
 def clean_stale(expected: set[str]) -> int:
@@ -882,6 +921,11 @@ def main() -> None:
     parser.add_argument("--concurrency", type=int, default=2)
     parser.add_argument("--resume", action="store_true", help="skip chunks that are done")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--fix-long",
+        action="store_true",
+        help="Cut the summaries that ran away past the embedding context",
+    )
     parser.add_argument(
         "--clean",
         action="store_true",
@@ -921,6 +965,9 @@ def main() -> None:
         write_chunk(chunk)
 
     logger.info("wrote %d knowledge entries", len(all_chunks))
+
+    if args.fix_long:
+        fix_long_overviews()
 
     if args.clean:
         clean_stale(

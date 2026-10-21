@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import os
 import shutil
 import sys
@@ -41,6 +42,9 @@ FACTS_DIR = Path("facts")
 DEFAULT_WORKSPACE = Path("memory/openviking")
 DEFAULT_SERVER = os.environ.get("OPENVIKING_URL", "http://localhost:1933")
 API_KEY = os.environ.get("OPENVIKING_API_KEY", "")
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 ACCOUNT = os.environ.get("OPENVIKING_ACCOUNT", "")
 
 # tier name -> (source folder, is the naming already OpenViking style)
@@ -79,6 +83,9 @@ def copy_wisdom(source: Path, target: Path, already_named: bool) -> int:
     for item in source.iterdir():
         if not item.is_file():
             continue
+        if item.name.endswith(".embedding.json"):
+            # a stored vector, not corpus content
+            continue
 
         if already_named:
             destination = target / item.name
@@ -89,6 +96,30 @@ def copy_wisdom(source: Path, target: Path, already_named: bool) -> int:
         copied += 1
 
     return copied
+
+
+def drop_tier(server: str, user: str, account: str, tier: str) -> None:
+    """Remove a tier from the server, records and all.
+
+    A vector rebuild re-embeds the fields the records already hold, so a
+    corpus that changed on disk keeps the old, longer content. The records
+    have to go first.
+    """
+    client = SyncHTTPClient(
+        url=server,
+        api_key=API_KEY,
+        user=user,
+        account=account,
+        timeout=1800.0,
+    )
+    client.initialize()
+    try:
+        client.rm(f"viking://~/resources/{tier}", recursive=True, wait=True)
+        logger.info("dropped viking://~/resources/%s", tier)
+    except Exception as exc:
+        logger.warning("could not drop viking://resources/%s: %s", tier, exc)
+    finally:
+        client.close()
 
 
 def migrate(tier: str, workspace: Path, user: str, dry_run: bool) -> int:
@@ -139,7 +170,9 @@ def reindex(
     server: str, workspace: Path, tier: str, user: str, api_key: str, account: str
 ) -> None:
     """Rebuild the vector index for one tier."""
-    root = f"viking://resources/{tier}"
+    # the corpus lives in the user namespace, which is what the home alias
+    # points at. The account scope is a different tree.
+    root = f"viking://~/resources/{tier}"
 
     client = SyncHTTPClient(
         url=server,
@@ -175,6 +208,11 @@ def main() -> int:
     parser.add_argument("--user", default="default")
     parser.add_argument("--api-key", default=API_KEY)
     parser.add_argument("--account", default=ACCOUNT)
+    parser.add_argument(
+        "--drop",
+        action="store_true",
+        help="Delete the tier from the server first, so stale records go",
+    )
     parser.add_argument("--tier", choices=[*TIERS, "all"], default="all")
     parser.add_argument("--reindex", action="store_true", help="rebuild the vectors after")
     parser.add_argument("--dry-run", action="store_true")
@@ -187,6 +225,12 @@ def main() -> int:
     print(f"server:    {args.server}")
     print(f"tiers:     {', '.join(tiers)}")
     print()
+
+    if args.drop and not args.dry_run:
+        # the drop deletes the tree from the server, and the workspace is the
+        # same directory, so it has to happen before the copy
+        for tier in tiers:
+            drop_tier(args.server, args.user, args.account, tier)
 
     total = 0
     for tier in tiers:

@@ -131,3 +131,59 @@ async def test_the_turn_carries_its_numbers(
 
     assert turn.tokens > 0
     assert turn.elapsed > 0
+
+
+async def test_the_answer_streams(
+    orchestrator: Orchestrator, context: Context, emotion: EmotionState
+) -> None:
+    """The reader sees the answer coming."""
+    pieces = []
+    turn = None
+
+    async for piece in orchestrator.stream_turn(
+        message="how do you explain the horizon",
+        worldview="spherical-earth",
+        alterego="Sam",
+        belief="the Earth is flat",
+        goal="spherical-earth",
+        state=context,
+        emotion_state=emotion,
+        history=[],
+    ):
+        if isinstance(piece, str):
+            pieces.append(piece)
+        else:
+            turn = piece
+
+    assert len(pieces) > 1
+    assert turn is not None
+    assert turn.reply == "".join(pieces)
+    assert turn.facts
+
+
+async def test_the_turn_can_be_cut_off(
+    orchestrator: Orchestrator, context: Context, emotion: EmotionState
+) -> None:
+    """The visitor speaks over the agent, and the answer stops."""
+    pieces = []
+    turn = None
+
+    async for piece in orchestrator.stream_turn(
+        message="explain the horizon at length please",
+        worldview="spherical-earth",
+        alterego="Sam",
+        belief="the Earth is flat",
+        goal="spherical-earth",
+        state=context,
+        emotion_state=emotion,
+        history=[],
+    ):
+        if isinstance(piece, str):
+            pieces.append(piece)
+            if len(pieces) == 2:
+                break
+        else:
+            turn = piece
+
+    assert len(pieces) == 2
+    assert turn is None

@@ -4,7 +4,7 @@ Talks to the OpenViking 0.5 server over HTTP with the official SDK. The
 server owns the storage, the embeddings and the vector index, this module is
 the thin layer the application uses.
 
-Two tiers live under viking://resources:
+Two tiers live under the home alias, viking://~/resources:
 
     knowledge/    the source text, verbatim, citable
     enrichment/   the ammunition: catchphrases, quotes, misleading claims
@@ -92,8 +92,12 @@ class VikingClient:
     # ------------------------------------------------------------------
 
     def tier_uri(self, tier: str | None = None) -> str:
-        """Root URI of a tier."""
-        return f"viking://resources/{tier or self.tier}"
+        """Root URI of a tier.
+
+        The home alias, because the corpus lives in the user namespace. The
+        account scope is a different tree and it is empty.
+        """
+        return f"viking://~/resources/{tier or self.tier}"
 
     def wisdom_uri(
         self,

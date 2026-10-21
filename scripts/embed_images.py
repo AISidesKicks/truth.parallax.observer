@@ -154,7 +154,11 @@ def write_entry(
     shutil.copy2(image_path, directory / image_path.name)
 
     if vector:
-        (directory / "image.embedding.json").write_text(
+        # the vector lives outside the corpus. Inside it, the server would
+        # try to embed seventeen kilobytes of json and reject it
+        vectors = FACTS_DIR.parent / "images" / worldview
+        vectors.mkdir(parents=True, exist_ok=True)
+        (vectors / f"{image_path.stem}.embedding.json").write_text(
             json.dumps({"model": MODEL, "dimension": len(vector), "vector": vector})
         )
 
