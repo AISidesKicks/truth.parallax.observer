@@ -18,7 +18,7 @@ CHARS_PER_TOKEN = 4
 class Summarizer(Protocol):
     """Whatever can turn a list of messages into a summary."""
 
-    def complete(self, prompt: str, **kwargs: Any) -> str:
+    async def complete(self, prompt: str, **kwargs: Any) -> str:
         """Give it a prompt, get text back."""
         ...
 
@@ -78,7 +78,7 @@ class ContextManager:
         """Is the conversation too big."""
         return self.count_tokens(messages) > self.alert_threshold
 
-    def compress(
+    async def compress(
         self,
         messages: list[dict[str, str]],
         summarizer: Summarizer | None = None,
@@ -101,7 +101,7 @@ class ContextManager:
                 header += "\n" + preserved.render()
             return [{"role": "system", "content": header}, *recent]
 
-        summary = self._summarize(old, summarizer)
+        summary = await self._summarize(old, summarizer)
         if preserved is not None:
             block = preserved.render()
             if block:
@@ -109,7 +109,9 @@ class ContextManager:
 
         return [{"role": "system", "content": f"[Conversation summary]\n{summary}"}, *recent]
 
-    def _summarize(self, messages: list[dict[str, str]], summarizer: Summarizer) -> str:
+    async def _summarize(
+        self, messages: list[dict[str, str]], summarizer: Summarizer
+    ) -> str:
         """Turn the old turns into a summary."""
         transcript = "\n".join(
             f"{message.get('role', 'user')}: {message.get('content', '')}"
@@ -125,11 +127,11 @@ class ContextManager:
             f"Conversation:\n{transcript}\n\nSummary:"
         )
         try:
-            return summarizer.complete(prompt, max_tokens=500)
+            return await summarizer.complete(prompt, max_tokens=500)
         except Exception:
             return "[Earlier conversation was dropped to save space]"
 
-    def fit(
+    async def fit(
         self,
         messages: list[dict[str, str]],
         extra: str = "",
@@ -143,7 +145,7 @@ class ContextManager:
 
         guard = 0
         while self.count_tokens(working) > self.max_tokens and guard < 6:
-            working = self.compress(working, summarizer, preserved)
+            working = await self.compress(working, summarizer, preserved)
             guard += 1
 
         # even the recent turns do not fit, so drop the oldest of them

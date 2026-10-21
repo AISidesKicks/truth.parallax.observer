@@ -39,7 +39,6 @@ async def lifespan(app: FastAPI):
         model=settings.llm_model,
         timeout=settings.llm_timeout,
         max_tokens=settings.llm_max_tokens,
-        thinking_budget=settings.llm_thinking_budget,
         temperature=settings.llm_temperature,
     )
 
@@ -51,6 +50,8 @@ async def lifespan(app: FastAPI):
             server=settings.openviking_url,
             user=settings.openviking_user,
             profile_dir=settings.profile_path,
+            api_key=settings.openviking_api_key,
+            account=settings.openviking_account,
         )
         logger.info("the memory server is up: %s", viking.health())
     except Exception as exc:
@@ -75,7 +76,7 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    llm.close()
+    await llm.aclose()
     if viking is not None:
         viking.close()
 
@@ -290,7 +291,7 @@ async def chat(websocket: WebSocket, session_id: str) -> None:
             await websocket.send_json({"type": "thinking", "text": text})
 
             try:
-                turn = orchestrator.run_turn(
+                turn = await orchestrator.run_turn(
                     message=text,
                     worldview=session.worldview,
                     alterego=session.alterego,

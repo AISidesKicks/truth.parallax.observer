@@ -33,6 +33,8 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_SERVER = os.environ.get("OPENVIKING_URL", "http://localhost:1933")
 DEFAULT_USER = os.environ.get("OPENVIKING_USER", "default")
+DEFAULT_ACCOUNT = os.environ.get("OPENVIKING_ACCOUNT", "")
+DEFAULT_API_KEY = os.environ.get("OPENVIKING_API_KEY", "")
 DEFAULT_TIER = "knowledge"
 
 # where the application keeps its own session state
@@ -64,14 +66,22 @@ class VikingClient:
         tier: str = DEFAULT_TIER,
         profile_dir: Path = DEFAULT_PROFILE_DIR,
         timeout: float = 120.0,
+        api_key: str = DEFAULT_API_KEY,
+        account: str = DEFAULT_ACCOUNT,
     ) -> None:
         self.server = server
         self.user = user
+        self.api_key = api_key
+        self.account = account
         self.tier = tier
         self.profile_dir = Path(profile_dir)
 
         self._client = SyncHTTPClient(
-            url=server, api_key="", user=user, timeout=timeout
+            url=server,
+            api_key=api_key,
+            user=user,
+            account=account,
+            timeout=timeout,
         )
         self._client.initialize()
 

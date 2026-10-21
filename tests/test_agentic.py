@@ -63,26 +63,26 @@ def test_rejection_is_detected() -> None:
     assert not detect_rejection("tell me more")
 
 
-def test_a_short_conversation_is_not_compressed() -> None:
+async def test_a_short_conversation_is_not_compressed() -> None:
     """Nothing to do."""
     manager = ContextManager(recent_turns_kept=5)
     messages = [{"role": "user", "content": "hello"}]
 
-    assert manager.compress(messages) == messages
+    assert await manager.compress(messages) == messages
 
 
-def test_a_long_conversation_is_compressed() -> None:
+async def test_a_long_conversation_is_compressed() -> None:
     """The old turns go."""
     manager = ContextManager(recent_turns_kept=2)
     messages = [{"role": "user", "content": f"message {i}"} for i in range(10)]
 
-    compressed = manager.compress(messages)
+    compressed = await manager.compress(messages)
 
     assert len(compressed) == 3
     assert compressed[0]["role"] == "system"
 
 
-def test_the_preserved_state_survives_compression() -> None:
+async def test_the_preserved_state_survives_compression() -> None:
     """The belief and the arguments must not be lost."""
     manager = ContextManager(recent_turns_kept=2)
     messages = [{"role": "user", "content": f"message {i}"} for i in range(10)]
@@ -92,17 +92,17 @@ def test_the_preserved_state_survives_compression() -> None:
         arguments_rejected=["water finds its level"],
     )
 
-    compressed = manager.compress(messages, preserved=preserved)
+    compressed = await manager.compress(messages, preserved=preserved)
 
     assert "the Earth is flat" in compressed[0]["content"]
     assert "water finds its level" in compressed[0]["content"]
 
 
-def test_the_context_fits_the_window() -> None:
+async def test_the_context_fits_the_window() -> None:
     """A long conversation gets squashed until it fits."""
     manager = ContextManager(max_tokens=500, alert_threshold=200, recent_turns_kept=2)
     messages = [{"role": "user", "content": "word " * 200} for _ in range(20)]
 
-    fitted = manager.fit(messages)
+    fitted = await manager.fit(messages)
 
     assert manager.count_tokens(fitted) <= manager.max_tokens

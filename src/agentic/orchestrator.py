@@ -8,6 +8,7 @@ the answer.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from dataclasses import dataclass, field
 from typing import Any
@@ -21,6 +22,7 @@ from src.agentic.strategies import (
     select_strategy,
     strategy_instructions,
 )
+from src.agentic.summarizer import AsyncSummarizer
 from src.llm import LLMClient, LLMError
 
 logger = logging.getLogger(__name__)
@@ -149,6 +151,7 @@ class Orchestrator:
         target_tier: str = "knowledge",
     ) -> None:
         self.llm = llm
+        self.summarizer = AsyncSummarizer(llm)
         self.viking = viking
         self.context = context_manager or ContextManager()
         self.top_k = top_k
@@ -158,7 +161,7 @@ class Orchestrator:
     # Retrieval
     # ------------------------------------------------------------------
 
-    def retrieve(
+    async def retrieve(
         self,
         question: str,
         worldview: str,
@@ -169,7 +172,8 @@ class Orchestrator:
             return []
 
         try:
-            hits = self.viking.search(
+            hits = await asyncio.to_thread(
+                self.viking.search,
                 query=question,
                 target=worldview,
                 category=category,
@@ -212,12 +216,11 @@ class Orchestrator:
                     pass
             blocks.append(f"[{index}] {body}\n    source: {fact.uri}")
         return "\n\n".join(blocks)
-
     # ------------------------------------------------------------------
     # The turn
     # ------------------------------------------------------------------
 
-    def run_turn(
+    async def run_turn(
         self,
         message: str,
         worldview: str,
@@ -231,7 +234,7 @@ class Orchestrator:
         category: str | None = None,
     ) -> Turn:
         """One exchange, from the visitor's message to the reply."""
-        facts = self.retrieve(message, worldview, category)
+        facts = await self.retrieve(message, worldview, category)
         state.no_match = not facts
         state.turn += 1
 
@@ -270,7 +273,9 @@ class Orchestrator:
             message=message,
         )
 
-        conversation = self.context.fit(history, extra=prompt, summarizer=self.llm, preserved=preserved)
+        conversation = await self.context.fit(
+            history, extra=prompt, summarizer=self.summarizer, preserved=preserved
+        )
 
         if not facts:
             # nothing in the corpus, so there is nothing to be persuasive
@@ -287,7 +292,7 @@ class Orchestrator:
             )
 
         try:
-            reply = self.llm.chat(conversation, max_tokens=900)
+            reply = await self.llm.chat(conversation, max_tokens=900)
             content = reply.content
             reasoning = reply.reasoning
             tokens = reply.prompt_tokens + reply.completion_tokens

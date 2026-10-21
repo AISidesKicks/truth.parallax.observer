@@ -38,6 +38,8 @@ class Settings(BaseSettings):
     # --- memory server ---------------------------------------------------
     openviking_url: str = "http://localhost:1933"
     openviking_user: str = "default"
+    openviking_api_key: str = ""
+    openviking_account: str = ""
     openviking_workspace: str = "memory/openviking"
     openviking_profile_dir: str = "memory/openviking/user"
 

@@ -27,13 +27,13 @@ class FakeLLM:
         self.stats = LLMStats()
         self.model = "fake-model"
 
-    def chat(
+    async def chat(
         self,
         messages: list[dict[str, str]],
+        system: str = "",
         max_tokens: int | None = None,
         temperature: float | None = None,
-        retries: int = 2,
-        json_mode: bool = False,
+        history: list[dict[str, str]] | None = None,
     ) -> LLMReply:
         """One reply, from the queue or a default."""
         self.calls.append(messages)
@@ -48,7 +48,7 @@ class FakeLLM:
             elapsed=0.1,
         )
 
-    def complete(self, prompt: str, **kwargs: Any) -> str:
+    async def complete(self, prompt: str, **kwargs: Any) -> str:
         """A single prompt."""
         self.calls.append([{"role": "user", "content": prompt}])
         return "A summary."
@@ -57,7 +57,7 @@ class FakeLLM:
         """The fake is always up."""
         return True
 
-    def close(self) -> None:
+    async def aclose(self) -> None:
         """Nothing to close."""
 
 

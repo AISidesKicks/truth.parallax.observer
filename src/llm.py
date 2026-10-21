@@ -1,21 +1,35 @@
-"""The chat client.
+"""The model layer.
 
-Talks to the llama.cpp router over the OpenAI compatible API. The models
-answer in two passes, the thinking tokens land in reasoning_content and the
-answer lands in content, so the token budget has to cover both and an empty
-answer with a finished reason means the budget was too small.
+PydanticAI on top of the llama.cpp router. The router speaks the OpenAI
+compatible API, so it is just a base_url.
+
+Two shapes are offered:
+
+    agent(system, output_type)   a typed agent, for the parts of the debate
+                                 that need a validated answer
+    chat(messages)               plain text, for the parts that are prose
+
+The models are reasoning models, so the answer arrives in two parts: the
+thinking tokens land in reasoning_content and the answer lands in content.
+PydanticAI handles the split, and the thinking is kept out of the reply.
 """
 
 from __future__ import annotations
 
 import logging
-import time
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, TypeVar
 
-import httpx
+import httpx2
+from pydantic import BaseModel
+from pydantic_ai import Agent
+from pydantic_ai.messages import ModelMessage, ModelRequest, ModelResponse, UserPromptPart
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
 
 logger = logging.getLogger(__name__)
+
+OutputT = TypeVar("OutputT", bound=BaseModel)
 
 
 @dataclass
@@ -69,8 +83,31 @@ class LLMError(RuntimeError):
     """The model server could not be reached or gave nothing usable."""
 
 
+def to_message_history(
+    history: list[dict[str, str]],
+) -> list[ModelMessage]:
+    """Turn the stored transcript into PydanticAI messages."""
+    messages: list[ModelMessage] = []
+    for entry in history:
+        role = entry.get("role", "user")
+        content = entry.get("content", "")
+        if role == "assistant":
+            messages.append(ModelResponse(parts=[]))
+            messages[-1].parts.append(_text_part(content))
+        else:
+            messages.append(ModelRequest(parts=[UserPromptPart(content=content)]))
+    return messages
+
+
+def _text_part(content: str) -> Any:
+    """A text part, imported lazily to keep the module import cheap."""
+    from pydantic_ai.messages import TextPart
+
+    return TextPart(content=content)
+
+
 class LLMClient:
-    """A thin chat client with a thinking aware token budget."""
+    """The model server, wrapped."""
 
     def __init__(
         self,
@@ -78,112 +115,147 @@ class LLMClient:
         model: str,
         timeout: float = 300.0,
         max_tokens: int = 1200,
-        thinking_budget: int = 1500,
         temperature: float = 0.8,
+        api_key: str = "parallax-local",
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.timeout = timeout
         self.max_tokens = max_tokens
-        self.thinking_budget = thinking_budget
         self.temperature = temperature
         self.stats = LLMStats()
 
-        self._client = httpx.Client(
-            timeout=timeout,
-            headers={"Content-Type": "application/json"},
+        self._provider = OpenAIProvider(
+            base_url=self.base_url,
+            api_key=api_key,
+            http_client=httpx2.AsyncClient(timeout=timeout),
+        )
+        self._model = OpenAIChatModel(
+            model,
+            provider=self._provider,
+            settings={"max_tokens": max_tokens},
         )
 
-    def close(self) -> None:
-        """Close the connection."""
-        self._client.close()
+    # ------------------------------------------------------------------
+    # Agents
+    # ------------------------------------------------------------------
+
+    def agent(
+        self,
+        system: str,
+        output_type: Any = str,
+        retries: int = 2,
+        temperature: float | None = None,
+    ) -> Agent:
+        """A typed agent.
+
+        `output_type` is a pydantic model when the answer has to have a
+        shape, and the default string when it is prose.
+        """
+        settings: dict[str, Any] = {
+            "temperature": temperature if temperature is not None else self.temperature
+        }
+        return Agent(
+            self._model,
+            system_prompt=system,
+            output_type=output_type,
+            retries=retries,
+            model_settings=settings,
+        )
+
+    async def chat(
+        self,
+        messages: list[dict[str, str]],
+        system: str = "",
+        max_tokens: int | None = None,
+        temperature: float | None = None,
+        history: list[dict[str, str]] | None = None,
+    ) -> LLMReply:
+        """One prose answer.
+
+        Args:
+            messages: The conversation, the last entry is the new question
+            system: The system prompt
+            max_tokens: Answer budget
+            temperature: Sampling temperature
+            history: Earlier turns, if the caller keeps them separately
+        """
+        import time
+
+        prompt = messages[-1]["content"] if messages else ""
+        agent = self.agent(system or "You are a helpful assistant.", temperature=temperature)
+
+        started = time.time()
+        try:
+            result = await agent.run(
+                prompt,
+                message_history=to_message_history(history or []),
+            )
+        except Exception as exc:
+            self.stats.failures += 1
+            raise LLMError(f"the model did not answer: {exc}") from exc
+
+        elapsed = time.time() - started
+        usage = result.usage
+        self.stats.requests += 1
+        self.stats.prompt_tokens += usage.input_tokens
+        self.stats.completion_tokens += usage.output_tokens
+        self.stats.total_seconds += elapsed
+        self.stats.latencies.append(elapsed)
+
+        thinking = ""
+        for message in result.new_messages():
+            for part in getattr(message, "parts", []):
+                if type(part).__name__ == "ThinkingPart":
+                    thinking += getattr(part, "content", "") or ""
+
+        return LLMReply(
+            content=str(result.output),
+            reasoning=thinking,
+            model=self.model,
+            prompt_tokens=usage.input_tokens,
+            completion_tokens=usage.output_tokens,
+            elapsed=elapsed,
+        )
+
+    async def typed(
+        self,
+        system: str,
+        prompt: str,
+        output_type: type[OutputT],
+        retries: int = 2,
+        temperature: float | None = None,
+    ) -> OutputT:
+        """One answer with a guaranteed shape."""
+        agent = self.agent(system, output_type=output_type, retries=retries, temperature=temperature)
+        try:
+            result = await agent.run(prompt)
+        except Exception as exc:
+            self.stats.failures += 1
+            raise LLMError(f"the model did not answer: {exc}") from exc
+
+        usage = result.usage
+        self.stats.requests += 1
+        self.stats.prompt_tokens += usage.input_tokens
+        self.stats.completion_tokens += usage.output_tokens
+        return result.output
+
+    # ------------------------------------------------------------------
+    # Status
+    # ------------------------------------------------------------------
 
     def available(self) -> bool:
         """Is the model server up."""
+        import httpx2
+
         try:
-            response = self._client.get(f"{self.base_url}/models", timeout=5.0)
+            response = httpx2.get(f"{self.base_url}/models", timeout=5.0)
             return response.status_code == 200
         except Exception:
             return False
 
-    def chat(
-        self,
-        messages: list[dict[str, str]],
-        max_tokens: int | None = None,
-        temperature: float | None = None,
-        retries: int = 2,
-        json_mode: bool = False,
-    ) -> LLMReply:
-        """One chat completion.
-
-        Args:
-            messages: The conversation
-            max_tokens: Answer budget, on top of the thinking budget
-            temperature: Sampling temperature
-            retries: How many times to try with a bigger budget
-            json_mode: Ask for a JSON answer
-
-        Raises:
-            LLMError: The server gave nothing usable
-        """
-        budget = max_tokens or self.max_tokens
-        best = ""
-
-        for attempt in range(retries + 1):
-            payload: dict[str, Any] = {
-                "model": self.model,
-                "messages": messages,
-                "max_tokens": budget + self.thinking_budget,
-                "temperature": temperature if temperature is not None else self.temperature,
-                "stream": False,
-            }
-            if json_mode:
-                payload["response_format"] = {"type": "json_object"}
-
-            started = time.time()
-            try:
-                response = self._client.post(f"{self.base_url}/chat/completions", json=payload)
-                response.raise_for_status()
-                data = response.json()
-            except Exception as exc:
-                self.stats.failures += 1
-                logger.warning("chat failed: %s", exc)
-                if attempt == retries:
-                    raise LLMError(f"the model server did not answer: {exc}") from exc
-                budget *= 2
-                continue
-
-            elapsed = time.time() - started
-            choice = data["choices"][0]
-            message = choice.get("message", {})
-            content = (message.get("content") or "").strip()
-            reasoning = (message.get("reasoning_content") or "").strip()
-
-            usage = data.get("usage", {})
-            self.stats.requests += 1
-            self.stats.prompt_tokens += usage.get("prompt_tokens", 0)
-            self.stats.completion_tokens += usage.get("completion_tokens", 0)
-            self.stats.total_seconds += elapsed
-            self.stats.latencies.append(elapsed)
-
-            if len(content) > len(best):
-                best = content
-
-            if content:
-                return LLMReply(
-                    content=content,
-                    reasoning=reasoning,
-                    model=data.get("model", self.model),
-                    prompt_tokens=usage.get("prompt_tokens", 0),
-                    completion_tokens=usage.get("completion_tokens", 0),
-                    elapsed=elapsed,
-                )
-
-            budget *= 2
-
-        raise LLMError(f"the model gave nothing usable after {retries + 1} tries")
-
-    def complete(self, prompt: str, **kwargs: Any) -> str:
-        """A single prompt, no conversation."""
-        reply = self.chat([{"role": "user", "content": prompt}], **kwargs)
-        return reply.content
+    async def aclose(self) -> None:
+        """Close the connection."""
+        client = getattr(self._provider, "client", None)
+        if client is not None:
+            await client.close()
