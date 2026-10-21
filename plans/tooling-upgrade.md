@@ -122,25 +122,57 @@ Done:
 - [x] the memory client rewritten on the SDK
 - [x] the corpus seeded into the workspace by `scripts/migrate_to_viking.py`
 - [x] the knowledge tier built from the raw sources
-- [x] a MediaWiki API pipeline, and the thin worldviews pulled through it
 - [x] the seed parser fixed, the expansion ported to llama.cpp
 - [x] `readme.md`, `docs/index.html` and the lab pages
 - [x] the repo is under version control
+- [x] the PersuChat slice, written from the BDD scenarios
+- [x] the corpus seeded and indexed in a live OpenViking server
+- [x] the app talking to the real model server and the real memory server
 
 Still open:
 
-1. **The app does not exist.** `src/main.py`, `src/agentic/`, `src/gui/`.
-   The multi-agent debate system is described in `plans/agentic.md`.
-2. **`plans/bdd-app.md` is empty.** Write the scenarios before the app code.
-   The whole project is built BDD first and that has been skipped so far.
-3. **No tests.** The `pytest` task exists and finds nothing.
-4. **The corpus has not been seeded into a live OpenViking server yet.**
-   `scripts/migrate_to_viking.py --reindex` needs the GPU free, because the
-   server embeds through the llama.cpp server.
-5. **The spherical-earth tier is still the thin one.** 69 knowledge entries
-   against 414 for Discworld. The Norse and Discworld corpora got a second
-   pipeline, the MediaWiki API, because the Fandom wikis refuse docling.
-   Wikipedia and Wikisource have plenty left for the scientific side.
-7. **`dataset/images/` is nearly empty.** Decide whether the image tier is
-   real or it goes.
+1. **Fire Chat, the 3-way debate.** Slice 3 of the BDD. The moderator, the
+   three personas and the stage machine.
+2. **The lab view.** Slice 2. The reader should be able to open a fact and
+   read where it came from.
+3. **The app has no observability yet.** Phoenix is in the compose, the
+   app does not send traces to it.
+4. **The GPU monitor is not wired into the app.** `nvidia-ml-py` is a
+   dependency and the bar asks for it, but nothing fills it in.
+5. **The images.** `dataset/images/` still has two files in it.
+6. **The chunks are at the edge.** The embedding model has a 2048 token
+   context, so a chunk has to fit in about 6000 characters. 288 chunks were
+   over that and could not be embedded until the chunk size came down.
+
+## The host problem
+
+The Docker runtime cannot reach the GPU on this machine. The nvidia kernel
+module is 615.71.09 and the userspace libraries are 615.71.10, so the
+container toolkit asks for a library that is not there:
+
+```
+failed to fulfil mount request: open
+/usr/lib/x86_64-linux-gnu/libnvidia-gtk3.so.615.71.09: no such file or directory
+```
+
+That is a host problem, not a project problem. Until it is sorted the
+llama.cpp server has to run natively, and there is a `native` pixi
+environment for it:
+
+```bash
+pixi run -e native llama-server \
+  --host 127.0.0.1 --port 11433 \
+  --models-preset scratch/llama-models.local.ini \
+  --models-max 2 --models-autoload
+```
+
+The conda-forge build is a bit older than the docker image, and it does not
+know the `gemma-embedding2` architecture that EmbeddingGemma 2 uses. So the
+native path runs EmbeddingGemma 300M instead. Everything else is the same,
+including the router and the preset file.
+
+The preset file is the one the compose uses, with the container paths
+swapped for the host paths. That is the whole point of writing it down as a
+file.
+
 
