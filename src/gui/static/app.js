@@ -53,34 +53,6 @@ refreshStatus();
 
 /* ---------------------------------------------------------------- setup */
 
-$("setup-form").addEventListener("submit", async (event) => {
-  event.preventDefault();
-
-  const payload = {
-    alterego: $("alterego").value.trim() || "Visitor",
-    belief: $("belief").value,
-    worldview: $("worldview").value,
-  };
-
-  const response = await fetch("/api/session", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    $("status").textContent = "could not start the session";
-    return;
-  }
-
-  state.session = await response.json();
-  $("setup").classList.add("hidden");
-  $("chat").classList.remove("hidden");
-  $("message").disabled = false;
-  $("message").focus();
-  connect();
-});
-
 /* ----------------------------------------------------------------- chat */
 
 function connect() {
@@ -264,3 +236,123 @@ $("reject").addEventListener("click", () => {
     $("message").value = "";
   }
 });
+
+/* ------------------------------------------------------------ fire chat */
+
+let fireSocket = null;
+
+$("setup-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const mode = ($("mode") && $("mode").value) || "chat";
+
+  const payload = {
+    alterego: $("alterego").value.trim() || "Visitor",
+    belief: $("belief").value,
+    worldview: $("worldview").value,
+  };
+
+  const response = await fetch("/api/session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    $("status").textContent = "could not start the session";
+    return;
+  }
+
+  state.session = await response.json();
+  $("setup").classList.add("hidden");
+
+  if (mode === "fire") {
+    $("fire").classList.remove("hidden");
+    $("topic").focus();
+  } else {
+    $("chat").classList.remove("hidden");
+    $("message").disabled = false;
+    $("message").focus();
+    connect();
+  }
+});
+
+$("fire-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const topic = $("topic").value.trim();
+  if (!topic || !state.session) return;
+
+  $("fire-transcript").innerHTML = "";
+  $("verdict").classList.add("hidden");
+  $("fire-status").textContent = "the debate is starting";
+
+  const scheme = location.protocol === "https:" ? "wss" : "ws";
+  fireSocket = new WebSocket(
+    `${scheme}://${location.host}/ws/fire/${state.session.id}`
+  );
+
+  fireSocket.onopen = () => {
+    fireSocket.send(JSON.stringify({ type: "start", topic: topic }));
+  };
+
+  fireSocket.onclose = () => {
+    $("fire-status").textContent = "the debate is over";
+  };
+
+  fireSocket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+
+    if (data.type === "stage") {
+      $("fire-status").textContent =
+        `${data.stage}, ${data.speaker} is speaking`;
+    } else if (data.type === "speech") {
+      showSpeech(data.speech);
+    } else if (data.type === "verdict") {
+      showVerdict(data.moderation);
+    } else if (data.type === "error") {
+      $("fire-status").textContent = data.message;
+    }
+  };
+});
+
+function showSpeech(speech) {
+  const node = document.createElement("div");
+  node.className = "speech";
+  const facts = speech.facts.length
+    ? `<div class="facts">${speech.facts.length} facts used</div>`
+    : "";
+  node.innerHTML =
+    `<span class="who">${speech.speaker}</span>` +
+    `<span class="stage">${speech.stage}</span>` +
+    `<div class="text"></div>${facts}`;
+  node.querySelector(".text").textContent = speech.text;
+  $("fire-transcript").appendChild(node);
+  $("fire-transcript").scrollTop = $("fire-transcript").scrollHeight;
+}
+
+function showVerdict(moderation) {
+  $("verdict").classList.remove("hidden");
+
+  const scores = (moderation.scores || [])
+    .map((score) => {
+      const width = Math.max(2, (score.score / 10) * 160);
+      return `
+      <div class="side-score">
+        <span class="name">${score.side}</span>
+        <span class="bar" style="width:${width}px"></span>
+        <span class="name">${score.score}</span>
+        <div class="strongest">strongest: ${score.strongest_point}</div>
+        <div class="weakest">weakest: ${score.weakest_point}</div>
+      </div>`;
+    })
+    .join("");
+
+  const moves = (moderation.manipulation_moves || []).length
+    ? `<div class="side-score"><div>the moves: ${moderation.manipulation_moves.join(", ")}</div></div>`
+    : "";
+
+  $("verdict-body").innerHTML =
+    scores +
+    moves +
+    `<div class="side-score">winner: <span class="winner">${moderation.winner}</span></div>` +
+    `<div class="side-score">${moderation.summary}</div>`;
+}

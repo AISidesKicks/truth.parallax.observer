@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>parallax.observer</title>
 <link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/fire.css">
 </head>
 <body>
 
@@ -39,6 +40,12 @@
         <option value="norse">Norse cosmology</option>
       </select>
 
+      <label for="mode">Mode</label>
+      <select id="mode" name="mode">
+        <option value="chat">PersuChat, one on one</option>
+        <option value="fire">Fire Chat, three way debate</option>
+      </select>
+
       <button type="submit">Begin</button>
     </form>
 
@@ -64,6 +71,23 @@
     </form>
 
     <div id="status">disconnected</div>
+  </section>
+
+  <section id="fire" class="panel hidden">
+    <form id="fire-form">
+      <label for="topic">The topic</label>
+      <input id="topic" name="topic" placeholder="the shape of the Earth" autocomplete="off">
+      <button type="submit">Start the debate</button>
+    </form>
+
+    <div id="fire-transcript"></div>
+
+    <div id="verdict" class="hidden">
+      <h3>The verdict</h3>
+      <div id="verdict-body"></div>
+    </div>
+
+    <div id="fire-status">ready</div>
   </section>
 </main>
 
