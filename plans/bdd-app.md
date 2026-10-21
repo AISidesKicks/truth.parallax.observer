@@ -1,10 +1,18 @@
 # BDD: the application
 
-Status: the app is written from these scenarios. They came first, and they
-are the thing to read if you want to know what the app is supposed to do.
+Status: slices 1 and 3 are implemented, slice 2 is partly. The app is
+written from these scenarios. They came first, and they are the thing to read
+if you want to know what the app is supposed to do.
 
 The slices are in build order. Slice 1 is the vertical one, a working
 PersuChat, and the rest hang off it.
+
+| Slice | State |
+|-------|-------|
+| 1, PersuChat | done |
+| 2, the lab view | half, the facts open and the arguments are listed, the model panel is not |
+| 3, Fire Chat | done |
+| 4, the running system | half, the model and the corpus are reported, Phoenix is not wired |
 
 ---
 

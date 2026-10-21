@@ -131,18 +131,19 @@ Done:
 
 Still open:
 
-1. **Fire Chat, the 3-way debate.** Slice 3 of the BDD. The moderator, the
-   three personas and the stage machine.
-2. **The lab view.** Slice 2. The reader should be able to open a fact and
-   read where it came from.
-3. **The app has no observability yet.** Phoenix is in the compose, the
-   app does not send traces to it.
-4. **The GPU monitor is not wired into the app.** `nvidia-ml-py` is a
+1. **The app has no observability yet.** Phoenix is in the compose, the
+   app does not send traces to it. PydanticAI has OpenTelemetry built in,
+   so this is an instrumentation call and a few lines.
+2. **The GPU monitor is not wired into the app.** `nvidia-ml-py` is a
    dependency and the bar asks for it, but nothing fills it in.
-5. **The images.** `dataset/images/` still has two files in it.
-6. **The chunks are at the edge.** The embedding model has a 2048 token
-   context, so a chunk has to fit in about 6000 characters. 288 chunks were
-   over that and could not be embedded until the chunk size came down.
+3. **The images.** `dataset/images/` still has two files in it. EmbeddingGemma
+   2 is multimodal, so it could be real now.
+4. **The lab view is half.** The facts open and the arguments are listed.
+   The model panel is not there.
+
+The chunks are no longer at the edge. They are 6000 characters, which fits
+the 2048 token context of the embedding model, and the tables are split into
+row groups with the header repeated.
 
 ## The host problem
 
