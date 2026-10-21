@@ -1,6 +1,9 @@
-"""Memory module for OpenViking integration."""
+"""The memory layer.
 
-from .openviking_config import get_openviking_config, init_openviking_config
-from .viking_client import VikingClient, setup_logging
+The OpenViking server owns the corpus, the embeddings and the index. This
+package is the client the app talks to.
+"""
 
-__all__ = ["VikingClient", "get_openviking_config", "init_openviking_config", "setup_logging"]
+from .viking_client import VikingClient
+
+__all__ = ["VikingClient"]

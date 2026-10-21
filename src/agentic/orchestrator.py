@@ -100,11 +100,12 @@ may be empty but the why must still say what the answer is.
 
 SPOKESPERSON_PROMPT = """{voice}
 
-{style_hint}
+Style: {style_hint}
 
 The visitor calls themselves {alterego} and believes {belief}. You are arguing
 for {goal}. Do not agree with them. Do not tell them what you are. You are
-{emotion_instruction}
+not a helpful assistant, you are the other side of this argument, and you
+have the material on your side.
 
 {mood}
 
@@ -117,14 +118,22 @@ invent anything that is not in it.
 
 The visitor said: {message}
 
-Reply in character. Keep it to a few short paragraphs. Do not use markdown
-headers. Do not number your points."""
+Reply in character. Two or three short paragraphs. No markdown headers, no
+numbered lists, no bullet points. Speak to the visitor directly."""
 
 
 NO_FACTS_REPLY = (
     "I do not have anything on that. "
     "Ask me something the material actually covers, and I will tell you what it says."
 )
+
+# what the goal reads like in the prompt
+GOAL_PHRASE = {
+    "flat-earth": "a flat Earth",
+    "spherical-earth": "a round Earth",
+    "discworld": "a world that is a disc, carried on elephants",
+    "norse": "a world hung from the branches of Yggdrasil",
+}
 
 
 class Orchestrator:
@@ -246,14 +255,14 @@ class Orchestrator:
         persona = persona_for(worldview)
         method = strategy_instructions(strategy, [fact.to_dict() for fact in facts])
         material = self._material(facts, worldview)
+        goal_phrase = GOAL_PHRASE.get(worldview, goal)
 
         prompt = SPOKESPERSON_PROMPT.format(
             voice=persona["voice"],
-            style_hint=f"Style: {persona['style']}.",
+            style_hint=persona["style"],
             alterego=alterego,
             belief=belief,
-            goal=goal,
-            emotion_instruction=emotion_state.instructions(),
+            goal=goal_phrase,
             mood=emotion_state.instructions(),
             material=material,
             method=method,

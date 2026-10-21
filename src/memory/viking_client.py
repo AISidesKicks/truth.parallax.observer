@@ -63,13 +63,16 @@ class VikingClient:
         user: str = DEFAULT_USER,
         tier: str = DEFAULT_TIER,
         profile_dir: Path = DEFAULT_PROFILE_DIR,
+        timeout: float = 120.0,
     ) -> None:
         self.server = server
         self.user = user
         self.tier = tier
         self.profile_dir = Path(profile_dir)
 
-        self._client = SyncHTTPClient(url=server, api_key="", user=user)
+        self._client = SyncHTTPClient(
+            url=server, api_key="", user=user, timeout=timeout
+        )
         self._client.initialize()
 
         logger.info("VikingClient ready: server=%s tier=%s", server, tier)
@@ -228,8 +231,17 @@ class VikingClient:
     # ------------------------------------------------------------------
 
     def _ls(self, uri: str) -> list[dict[str, Any]]:
+        """The entries under a URI.
+
+        The SDK returns a plain list, but an older shape was a dict with an
+        entries key, so both are handled.
+        """
         result = self._client.ls(uri)
-        return result.get("entries", []) if isinstance(result, dict) else []
+        if isinstance(result, list):
+            return result
+        if isinstance(result, dict):
+            return result.get("entries", []) or result.get("items", [])
+        return []
 
     def list_targets(self, tier: str | None = None) -> list[str]:
         """The worldviews in a tier."""

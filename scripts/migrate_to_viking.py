@@ -133,7 +133,7 @@ def reindex(server: str, workspace: Path, tier: str, user: str) -> None:
     """Rebuild the vector index for one tier."""
     root = f"viking://resources/{tier}"
 
-    client = SyncHTTPClient(url=server, api_key="", user=user)
+    client = SyncHTTPClient(url=server, api_key="", user=user, timeout=1800.0)
     client.initialize()
 
     print(f"  reindexing {root} (vectors only)")

@@ -62,10 +62,16 @@ matplotlib = ">=3.8"
 seaborn = ">=0.13"
 rapidfuzz = ">=3.0"
 
+# the llama.cpp server, straight from conda-forge, for when the docker
+# runtime cannot reach the GPU
+[feature.native-llama.dependencies]
+"llama.cpp" = ">=11266"
+
 [environments]
 default = ["core"]
 experiment = ["core", "experiment"]
 benchmarks = ["core", "benchmarks"]
+native = ["core", "native-llama"]
 
 [pypi-dependencies]
 markdownify = ">=1.2.3, <2"

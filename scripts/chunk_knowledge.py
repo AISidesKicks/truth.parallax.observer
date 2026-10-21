@@ -47,7 +47,9 @@ SOURCE_GROUPS = {
 }
 
 MIN_CHUNK_CHARS = 400
-MAX_CHUNK_CHARS = 12000
+# the embedding model has a 2048 token context, so a chunk has to fit in
+# about 8000 characters or the embedding call is rejected
+MAX_CHUNK_CHARS = 6000
 
 # room for the thinking tokens of a reasoning model, on top of the answer
 THINKING_BUDGET = 1500
