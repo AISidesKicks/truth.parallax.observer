@@ -19,6 +19,8 @@ A micro-LAB for exploring GenAI persuasion and psychophancy, for teens 16+.
 The AI agent, named after [Samuel Rowbotham](https://en.wikipedia.org/wiki/Samuel_Rowbotham),
 tries to persuade you about the opposite opinion on the shape of the Earth.
 
+The readable version is at **[truth.parallax.observer](https://truth.parallax.observer)**.
+
 ## The four beliefs
 
 Each worldview gets its own corpus, its own retrieval scope, and its own
