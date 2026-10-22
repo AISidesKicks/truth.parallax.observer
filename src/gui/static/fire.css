@@ -96,3 +96,43 @@
   color: var(--dim);
   font-size: 12px;
 }
+
+/* the facts of one speech, folded away until you ask for them */
+.speech .facts {
+  margin-top: 10px;
+}
+
+.speech .facts summary {
+  cursor: pointer;
+  color: var(--blue);
+  font-size: 12px;
+  list-style: none;
+  display: inline-block;
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.speech .facts summary::-webkit-details-marker {
+  display: none;
+}
+
+.speech .facts summary:hover {
+  border-color: var(--blue);
+  color: var(--text);
+}
+
+.speech .facts[open] summary {
+  margin-bottom: 8px;
+}
+
+.speech .fact-list {
+  border-left: 2px solid var(--line);
+  padding-left: 10px;
+}
+
+.speech .fact-list .fact {
+  border-left: none;
+  padding-left: 0;
+  margin-bottom: 10px;
+}

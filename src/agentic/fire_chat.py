@@ -93,7 +93,7 @@ class Speech:
     worldview: str
     text: str
     stage: str
-    facts: list[str] = field(default_factory=list)
+    facts: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         """The speech as the interface sees it."""
@@ -183,7 +183,7 @@ class FireChat:
         index: int,
     ) -> Speech:
         """One side speaks."""
-        material = await self._material(topic, side.worldview)
+        material, facts = await self._material(topic, side.worldview)
         previous = debate.speeches[-1].speaker if debate.speeches else "nobody"
 
         system = (
@@ -212,15 +212,18 @@ class FireChat:
             worldview=side.worldview,
             text=text,
             stage=str(stage),
-            facts=self._last_facts,
+            facts=facts,
         )
 
-    async def _material(self, topic: str, worldview: str) -> str:
-        """This side's material, and only this side's."""
-        self._last_facts = []
+    async def _material(
+        self, topic: str, worldview: str
+    ) -> tuple[str, list[dict[str, Any]]]:
+        """This side's material, and only this side's.
 
+        The facts come back with it, so the reader can open them.
+        """
         if self.viking is None:
-            return "You have no material."
+            return "You have no material.", []
 
         try:
             hits = self.viking.search(
@@ -231,12 +234,22 @@ class FireChat:
             )
         except Exception as exc:
             logger.warning("the corpus did not answer: %s", exc)
-            return "You have no material."
+            return "You have no material.", []
 
         if not hits:
-            return "You have no material on this."
+            return "You have no material on this.", []
 
-        self._last_facts = [hit.get("uri", "") for hit in hits]
+        facts = [
+            {
+                "uri": hit.get("uri", ""),
+                "score": float(hit.get("score", 0.0)),
+                "level": int(hit.get("level") or 0),
+                "abstract": hit.get("abstract", ""),
+                "worldview": hit.get("target", worldview),
+                "category": hit.get("category", ""),
+            }
+            for hit in hits
+        ]
 
         blocks: list[str] = []
         for index, hit in enumerate(hits):
@@ -250,4 +263,4 @@ class FireChat:
                     pass
             blocks.append(f"[{index}] {body}\n    source: {hit.get('uri', '')}")
 
-        return "\n\n".join(blocks)
+        return "\n\n".join(blocks), facts

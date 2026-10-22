@@ -152,8 +152,10 @@ async def test_each_side_only_cites_its_own_corpus(llm, viking, sides) -> None:
     debate = await FireChat(llm, viking).run("the shape of the Earth", sides)
 
     for speech in debate.speeches:
+        assert speech.facts
         for fact in speech.facts:
-            assert f"/{speech.worldview}/" in fact
+            assert f"/{speech.worldview}/" in fact["uri"]
+            assert fact["score"] > 0
 
     for search in viking.searches:
         assert search["target"] in {"spherical-earth", "flat-earth", "discworld"}

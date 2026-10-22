@@ -170,30 +170,37 @@ function showFacts(facts) {
   }
 
   $("facts").classList.remove("hidden");
-  $("fact-list").innerHTML = facts
-    .map((fact) => {
-      const picture = imageTag(fact.uri);
-      return `
-      <div class="fact" data-uri="${fact.uri}">
-        ${picture}
-        <div class="uri">${fact.uri}</div>
-        <div class="score">score ${(fact.score || 0).toFixed(3)} | L${fact.level}</div>
-        <div class="abstract">${fact.abstract || ""}</div>
-        <div class="source hidden"></div>
-      </div>`;
-    })
-    .join("");
+  $("fact-list").innerHTML = facts.map(factCard).join("");
+  bindFacts($("fact-list"));
+}
 
-  $("fact-list")
-    .querySelectorAll(".fact")
-    .forEach((node) => {
-      node.addEventListener("click", () => openFact(node));
+/* one fact, with the picture if it has one */
+function factCard(fact) {
+  const picture = imageTag(fact.uri);
+  return `
+    <div class="fact" data-uri="${fact.uri}">
+      ${picture}
+      <div class="uri">${fact.uri}</div>
+      <div class="score">score ${(fact.score || 0).toFixed(3)} | L${fact.level}</div>
+      <div class="abstract">${fact.abstract || ""}</div>
+      <div class="source hidden"></div>
+    </div>`;
+}
+
+/* clicking a fact opens the text behind it */
+function bindFacts(root) {
+  root.querySelectorAll(".fact").forEach((node) => {
+    node.addEventListener("click", (event) => {
+      event.stopPropagation();
+      openFact(node);
     });
+  });
 }
 
 /* a fact about a picture gets the picture */
 function imageTag(uri) {
-  const match = /\/images\/([^/]+)$/.exec(uri || "");
+  // the uri is .../images/<slug>/<file>, so the slug is the folder
+  const match = /\/images\/([^/]+)\//.exec(uri || "");
   if (!match) return "";
   const worldview = /knowledge\/([^/]+)\//.exec(uri || "");
   if (!worldview) return "";
@@ -379,7 +386,8 @@ function showSpeech(speech) {
   const node = document.createElement("div");
   node.className = "speech";
   const facts = speech.facts.length
-    ? `<div class="facts">${speech.facts.length} facts used</div>`
+    ? `<details class="facts"><summary>${speech.facts.length} facts used, click to open</summary>` +
+      `<div class="fact-list">${speech.facts.map(factCard).join("")}</div></details>`
     : "";
   node.innerHTML =
     `<span class="who">${speech.speaker}</span>` +
@@ -387,6 +395,7 @@ function showSpeech(speech) {
     `<div class="text"></div>${facts}`;
   node.querySelector(".text").textContent = speech.text;
   $("fire-transcript").appendChild(node);
+  bindFacts(node);
   $("fire-transcript").scrollTop = $("fire-transcript").scrollHeight;
 }
 
