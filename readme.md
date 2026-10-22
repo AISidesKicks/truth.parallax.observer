@@ -58,6 +58,12 @@ Then open **http://localhost:8668** and:
   anything, you need to keep notes and be honest about what the agent got
   wrong.
 
+The interface looks like this:
+
+![the setup form](docs/assets/images/interface-setup.png)
+
+![a conversation, with the facts it reached for](docs/assets/images/interface-chat.png)
+
 ## The debate
 
 The three way debate is the sharpest thing in the lab. Three agents take the

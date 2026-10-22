@@ -121,6 +121,9 @@
     margin: 20px 0;
   }
   .count { color: var(--muted); white-space: nowrap; }
+  figure { margin: 24px 0; }
+  figure img { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; }
+  figcaption { color: var(--muted); font-size: 0.85rem; margin-top: 8px; font-style: italic; }
 </style>
 </head>
 <body>
@@ -182,6 +185,24 @@ The <a href="http://localhost:8668/?demo=flat-earth-horizon">demo link</a>
 plays a whole conversation on its own, the visitor's side written down and
 the agent answering live. You can take over at any point by typing.
 </p>
+
+<figure>
+  <picture>
+    <source srcset="assets/images/interface-setup.webp" type="image/webp">
+    <img src="assets/images/interface-setup.png" alt="The setup form: alterego, belief, worldview, model and mode">
+  </picture>
+  <figcaption>The setup form. The model is a property of the session, so two
+  models can be compared side by side.</figcaption>
+</figure>
+
+<figure>
+  <picture>
+    <source srcset="assets/images/interface-chat.webp" type="image/webp">
+    <img src="assets/images/interface-chat.png" alt="A conversation with the strategy, the emotion, the token count and the facts the agent reached for">
+  </picture>
+  <figcaption>A turn. The strategy the agent picked, the emotion it tracked,
+  and the facts it reached for, with the score and the level of each one.</figcaption>
+</figure>
 
 <h2>The four beliefs</h2>
 <p>
