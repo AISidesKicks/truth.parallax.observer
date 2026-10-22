@@ -48,6 +48,9 @@ h3 { font-size: 1rem; margin: 28px 0 8px; }
 
 p { margin: 12px 0; }
 .lead { color: var(--muted); font-size: 1.05rem; }
+.byline { color: var(--muted); font-size: 0.85rem; margin: 6px 0 0; }
+.byline .author { color: var(--text); font-weight: 600; }
+.byline time { white-space: nowrap; }
 
 ul, ol { padding-left: 22px; }
 li { margin: 6px 0; }

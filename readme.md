@@ -2,6 +2,8 @@
 
 **Earthify you! Guaranteed!!!**
 
+By **AISideKicks** · Published 22 October 2026
+
 <img src="docs/assets/images/4earth_believes.webp" alt="Four observers around a RAG truth stress engine: the scientific Earth, the flat Earth under a dome, the Discworld on the back of a turtle, and the Norse world tree">
 
 <p align="right"><img src="docs/assets/images/logo-badge.png" width="120" alt="parallax.observer, a cartoon globe with a smiling sun and the words AI knows it best"></p>
