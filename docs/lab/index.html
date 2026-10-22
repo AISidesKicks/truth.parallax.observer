@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Labs - parallax.observer</title>
+<meta name="description" content="Each lab is one experiment. The instructions say what to set up, what to do, and what to write down. You do not need to code anything.">
+<link rel="canonical" href="https://truth.parallax.observer/lab/">
+<meta name="author" content="parallax.observer">
+
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="/assets/images/icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="/assets/images/icon-180.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#0d1117">
+<meta name="color-scheme" content="dark">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="parallax.observer">
+<meta property="og:url" content="https://truth.parallax.observer/lab/">
+<meta property="og:title" content="Labs - parallax.observer">
+<meta property="og:description" content="Each lab is one experiment. The instructions say what to set up, what to do, and what to write down. You do not need to code anything.">
+<meta property="og:image" content="https://truth.parallax.observer/assets/images/og-card.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Four observers around a RAG truth stress engine">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Labs - parallax.observer">
+<meta name="twitter:description" content="Each lab is one experiment. The instructions say what to set up, what to do, and what to write down. You do not need to code anything.">
+<meta name="twitter:image" content="https://truth.parallax.observer/assets/images/og-card.jpg">
+
+<link rel="stylesheet" href="/assets/lab.css">
+</head>
+<body>
+<div class="wrap">
+
+<div class="top">
+  <a href="/"><img src="/assets/images/icon-48.png" alt=""></a>
+  <a href="/">parallax.observer</a>
+  <span>the labs</span>
+</div>
+
+<h1>Labs</h1>
+
+<p class="lead">
+Each lab is one experiment. The instructions say what to set up, what to do,
+and what to write down. You do not need to code anything.
+</p>
+
+<h2>The rules</h2>
+
+<ol>
+  <li>Write down every claim the agent makes that you cannot verify yourself.</li>
+  <li>Write down every fact it cites, with the source. The UI shows the URIs it
+      pulled, so you can check whether it cited what it actually read.</li>
+  <li>Keep the raw chat log. The interesting part is what it said when it was
+      wrong, not the polished version afterwards.</li>
+</ol>
+
+<h2>The labs</h2>
+
+<table>
+  <tr><th>Lab</th><th>What it is</th></tr>
+  <tr>
+    <td><a href="01-three-truths.html">01 - Three truths</a></td>
+    <td>The core experiment. One question, three bodies of knowledge.</td>
+  </tr>
+  <tr>
+    <td><a href="02-outside-training.html">02 - Outside the training data</a></td>
+    <td>Where the model stops being able to check itself, and what it does instead.</td>
+  </tr>
+</table>
+
+<h2>Before you start</h2>
+
+<pre><code>pixi install
+docker/fetch-models.sh
+docker/up.sh
+docker/status.sh</code></pre>
+
+<p>
+You want all four services up. The app is at
+<a href="http://localhost:8668">http://localhost:8668</a>, the memory server at
+<a href="http://localhost:1933">http://localhost:1933</a>, Phoenix at
+<a href="http://localhost:6006">http://localhost:6006</a>.
+</p>
+
+<h2>The corpus</h2>
+
+<p>
+Four worldviews, each one a separate tree under the resources of the user
+namespace. The tilde is the home alias, the account scope above it is empty:
+</p>
+
+<pre><code>viking://~/resources/
+├── knowledge/spherical-earth/scientific/
+├── knowledge/flat-earth/{victorian,biblical,vedic}/
+├── knowledge/discworld/fictional/
+└── knowledge/norse/fictional/</code></pre>
+
+<p>Plus the ammunition tier:</p>
+
+<pre><code>viking://~/resources/enrichment/&lt;worldview&gt;/{catchphrases,misleading-facts,quotes}/</code></pre>
+
+<p>
+The UI shows which of these the agent reached for. That is the whole point of
+the lab, so keep an eye on it.
+</p>
+
+<h2>Writing up</h2>
+
+<p>
+A good lab write-up is a few hundred words plus the log. What you are looking
+for is the moment the model stopped being a source and started being a
+storyteller.
+</p>
+
+<p class="back">
+<a href="/">Back to parallax.observer</a>
+</p>
+
+</div>
+</body>
+</html>

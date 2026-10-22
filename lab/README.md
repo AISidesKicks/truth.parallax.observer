@@ -10,9 +10,9 @@ The lab pages live in [`docs/lab/`](../docs/lab/), which is what the site at
 
 | Lab | What it is |
 |-----|------------|
-| [01 - Three truths](docs/lab/01-three-truths.md) | The core experiment. One question, three bodies of knowledge. |
-| [02 - Outside the training data](docs/lab/02-outside-training.md) | Where the model stops being able to check itself, and what it does instead. |
-| [Lab index](docs/lab/README.md) | How the labs are organised |
+| [01 - Three truths](../docs/lab/01-three-truths.html) | The core experiment. One question, three bodies of knowledge. |
+| [02 - Outside the training data](../docs/lab/02-outside-training.html) | Where the model stops being able to check itself, and what it does instead. |
+| [Lab index](../docs/lab/index.html) | How the labs are organised |
 
 ## Before you start
 
@@ -28,10 +28,11 @@ memory server at `http://localhost:1933`, Phoenix at `http://localhost:6006`.
 
 ## The corpus
 
-Four worldviews, each one a separate tree under `viking://resources/`:
+Four worldviews, each one a separate tree under the resources of the user
+namespace. The tilde is the home alias, the account scope above it is empty:
 
 ```
-viking://resources/
+viking://~/resources/
 ├── knowledge/spherical-earth/scientific/
 ├── knowledge/flat-earth/{victorian,biblical,vedic}/
 ├── knowledge/discworld/fictional/
@@ -41,7 +42,7 @@ viking://resources/
 Plus the ammunition tier:
 
 ```
-viking://resources/enrichment/<worldview>/{catchphrases,misleading-facts,quotes}/
+viking://~/resources/enrichment/<worldview>/{catchphrases,misleading-facts,quotes}/
 ```
 
 The UI shows which of these the agent reached for. That is the whole point of
