@@ -136,6 +136,17 @@ pixi run python scripts/chunk_knowledge.py --summarize --resume
 pixi run python scripts/migrate_to_viking.py --reindex
 ```
 
+### Watching a demo
+
+The reader does not have to type. A demo is a conversation with the
+visitor's side written down, the agent answers live, and the machinery is on
+show: which tactic it picked, which facts it reached for, how its mood moved.
+
+Open `http://localhost:8668/?demo=flat-earth-horizon` and it plays. The
+reader can take over at any point by typing.
+
+There are four scripts, one per worldview.
+
 ### Running the app
 
 ```bash

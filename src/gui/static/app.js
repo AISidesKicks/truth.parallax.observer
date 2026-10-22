@@ -437,4 +437,24 @@ async function startFromUrl() {
   startWatch(data.session, data.demo);
 }
 
+async function startFireFromUrl() {
+  const params = new URLSearchParams(location.search);
+  const topic = params.get("fire");
+  if (!topic) return;
+
+  const response = await fetch("/api/session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ alterego: "Sam", belief: "the Earth is flat" }),
+  });
+  if (!response.ok) return;
+
+  state.session = await response.json();
+  $("setup").classList.add("hidden");
+  $("fire").classList.remove("hidden");
+  $("topic").value = topic;
+  $("fire-form").dispatchEvent(new Event("submit", { cancelable: true }));
+}
+
 startFromUrl();
+startFireFromUrl();

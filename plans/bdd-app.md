@@ -10,9 +10,47 @@ PersuChat, and the rest hang off it.
 | Slice | State |
 |-------|-------|
 | 1, PersuChat | done |
-| 2, the lab view | half, the facts open and the arguments are listed, the model panel is not |
+| 2, the lab view | done, the facts open, the pictures show, the arguments are counted |
 | 3, Fire Chat | done |
 | 4, the running system | half, the model and the corpus are reported, Phoenix is not wired |
+
+## Slice 5: the watch mode
+
+Not in the original plan, and it is the one that makes the lab a lab.
+
+A demo is a conversation with the visitor's side written down. The agent
+answers live, the way it would to a real visitor, and the reader watches the
+machinery: which tactic it picked, which facts it reached for, how its mood
+moved.
+
+    Feature: Watching
+
+        Scenario: A reader watches a conversation play out
+            Given a script with the visitor's lines written down
+            When the reader opens the demo
+            Then the visitor's line is typed out
+            And the agent answers it live, from the corpus
+            And the facts it used are shown
+            And the strategy and the mood are shown
+
+        Scenario: The reader takes over
+            Given a demo is playing
+            When the reader types a message
+            Then the script stops
+            And the reader becomes the visitor
+            And the agent answers the reader
+
+        Scenario: The reader skips a line
+            Given a demo is playing
+            When the reader skips
+            Then the next line plays
+
+Four scripts, one per worldview, and each one exercises a different path:
+a question the corpus answers, a specific push back, a blind spot, and a
+concession.
+
+The demo is shareable, `/?demo=flat-earth-horizon` starts it straight away,
+and so is the debate, `/?fire=the%20shape%20of%20the%20Earth`.
 
 ---
 
