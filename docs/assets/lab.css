@@ -39,6 +39,19 @@ body {
 }
 
 .top a:hover { color: var(--accent); }
+.gh {
+  display: inline-block;
+  font-size: .8rem;
+  text-decoration: none;
+  color: var(--accent);
+  border: 1px solid var(--line);
+  border-radius: .5rem;
+  padding: .1rem .5rem;
+  background: var(--panel);
+  vertical-align: middle;
+  margin-left: .4rem;
+}
+.gh:hover { border-color: var(--accent); }
 
 .top span { color: var(--muted); font-size: 0.9rem; }
 

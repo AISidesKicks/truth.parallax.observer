@@ -78,6 +78,7 @@
   }
 
   h1 { font-size: 2.1rem; margin: 24px 0 8px; letter-spacing: -0.02em; }
+  h1 .domain { color: var(--accent); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1.6rem; }
   h2 { font-size: 1.35rem; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
   h3 { font-size: 1.05rem; margin: 28px 0 8px; }
   p { margin: 12px 0; }
@@ -85,6 +86,19 @@
   .byline { color: var(--muted); font-size: 0.88rem; margin: 10px 0 0; }
   .byline .author { color: var(--text); font-weight: 600; }
   .byline time { white-space: nowrap; }
+  .gh {
+    display: inline-block;
+    font-size: .85rem;
+    text-decoration: none;
+    color: var(--accent);
+    border: 1px solid var(--line);
+    border-radius: .5rem;
+    padding: .15rem .6rem;
+    background: var(--panel);
+    vertical-align: middle;
+    margin-left: .5rem;
+  }
+  .gh:hover { border-color: var(--accent); }
   .lead { color: var(--muted); font-size: 1.06rem; }
   code {
     background: var(--panel);
@@ -139,7 +153,7 @@
 <div class="wrap">
 
 <header>
-  <h1>parallax.observer</h1>
+  <h1><span class="domain">truth.parallax.observer</span> <a class="gh" href="https://github.com/AISideKicks/truth-parallax-observer">github</a></h1>
   <p class="tagline">Earthify you! Guaranteed!!!</p>
   <p class="byline">By <span class="author">AISideKicks</span> &middot; Published <time datetime="2026-10-22">22 October 2026</time></p>
 </header>
