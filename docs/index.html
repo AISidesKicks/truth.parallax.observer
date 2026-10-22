@@ -62,8 +62,10 @@
   }
   .wrap { max-width: 920px; margin: 0 auto; padding: 48px 24px 96px; }
 
-  /* the hero picture, full width of the column, the logo on top of it */
-  .hero { position: relative; margin: -48px -24px 40px; }
+  /* the title comes first, the picture is the full width banner under it */
+  header { margin-bottom: 28px; }
+  header h1 { margin: 0 0 8px; }
+  .hero { position: relative; margin: 0 -24px 40px; }
   .hero picture { display: block; }
   .hero picture img { display: block; width: 100%; height: auto; }
   .hero .badge {
@@ -79,7 +81,7 @@
   h2 { font-size: 1.35rem; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
   h3 { font-size: 1.05rem; margin: 28px 0 8px; }
   p { margin: 12px 0; }
-  .tagline { color: var(--muted); font-size: 1.05rem; }
+  .tagline { color: var(--muted); font-size: 1.05rem; margin: 0; }
   .byline { color: var(--muted); font-size: 0.88rem; margin: 10px 0 0; }
   .byline .author { color: var(--text); font-weight: 600; }
   .byline time { white-space: nowrap; }
@@ -136,17 +138,19 @@
 <body>
 <div class="wrap">
 
-<header class="hero">
+<header>
+  <h1>parallax.observer</h1>
+  <p class="tagline">Earthify you! Guaranteed!!!</p>
+  <p class="byline">By <span class="author">AISideKicks</span> &middot; Published <time datetime="2026-10-22">22 October 2026</time></p>
+</header>
+
+<div class="hero">
   <picture>
     <source srcset="assets/images/4earth_believes.webp" type="image/webp">
     <img src="assets/images/4earth_Believes.jpeg" alt="Four observers around a RAG truth stress engine: the scientific Earth, the flat Earth under a dome, the Discworld on the back of a turtle, and the Norse world tree">
   </picture>
   <img class="badge" src="assets/images/logo-badge.png" alt="parallax.observer, a cartoon globe with a smiling sun and the words AI knows it best">
-</header>
-
-<h1>parallax.observer</h1>
-<p class="tagline">Earthify you! Guaranteed!!!</p>
-<p class="byline">By <span class="author">AISideKicks</span> &middot; Published <time datetime="2026-10-22">22 October 2026</time></p>
+</div>
 
 <p class="lead">
 Parallax is the apparent shift in the position of an object when you move your
