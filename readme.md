@@ -37,9 +37,9 @@ is scoped to the worldview directory. The numbers move as the corpus grows,
 
 ## The debate
 
-The three way debate is the sharpest thing in the lab. Two agents argue the
-same position from two different worldviews, a moderator reads both and scores
-them, and then it rules. Twelve speeches, four stages, one verdict.
+The three way debate is the sharpest thing in the lab. Three agents take the
+same topic from three different worldviews, a moderator reads all of them,
+scores them and then rules. Twelve speeches, four stages, one verdict.
 
 <video controls width="820" poster="docs/assets/videos/3way-auto-debate-poster.jpg">
   <source src="docs/assets/videos/3way-auto-debate.mp4" type="video/mp4">
