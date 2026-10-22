@@ -805,7 +805,7 @@ Context: 8.2K/16K ████████░░ | Viking: 3q | Compress: 2x | T
 
 ## Related Files
 
-- [plans/memory.md](memory.md) - Viking memory system and L0/L1/L2 tiers
+- [plans/agent-framework.md](agent-framework.md) - Viking memory system and L0/L1/L2 tiers
 - [plans/dataset.md](dataset.md) - Knowledge sources for retrieval
 - [plans/gui.md](gui.md) - GUI layout and emotion icons
 - [plans/monitor.md](monitor.md) - Performance monitoring

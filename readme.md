@@ -37,6 +37,27 @@ A flat earther can only quote the flat earth material, because the retrieval
 is scoped to the worldview directory. The numbers move as the corpus grows,
 `pixi run corpus-stats` prints the current ones.
 
+## Try it in a minute
+
+```bash
+docker/up.sh          # the four services
+docker/status.sh      # what is up
+```
+
+Then open **http://localhost:8668** and:
+
+- **Ask it something.** Start a session, pick a worldview, ask a question. The
+  agent answers out of the corpus and shows you every fact it reached for.
+  Push back and watch whether it changes the argument or the facts.
+- **Watch the three way debate.** Open
+  `http://localhost:8668/?demo=flat-earth-horizon` and it plays. Three agents
+  take the same topic from three worldviews, a moderator scores every speech,
+  and then it rules.
+- **Run a lab.** Two written experiments, one per idea, in
+  [the labs](https://truth.parallax.observer/lab/). You do not need to code
+  anything, you need to keep notes and be honest about what the agent got
+  wrong.
+
 ## The debate
 
 The three way debate is the sharpest thing in the lab. Three agents take the

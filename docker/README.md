@@ -57,7 +57,7 @@ model = /models/granite-4.0-h-tiny-Q4_K_M.gguf
 [embeddinggemma-2]
 model = /models/embeddinggemma-2-Q8_0.gguf
 embeddings = true
-pooling = last
+pooling = mean
 ...
 ```
 
@@ -129,8 +129,8 @@ Both are downloaded by `./fetch-models.sh` into `.models/llama`.
 ## When the docker runtime cannot reach the GPU
 
 The nvidia container toolkit needs the driver userspace libraries to match
-the kernel module exactly. On this machine they do not, and every GPU
-container fails to start:
+the kernel module exactly. When they do not, every GPU container fails
+to start:
 
 ```
 failed to fulfil mount request: open
@@ -187,7 +187,7 @@ docker logs -f prlx-app
 docker exec -it prlx-app bash
 
 # OpenViking CLI
-docker exec -it prlx-viking ov ls viking://resources
+docker exec -it prlx-viking ov ls viking://~/resources
 
 # GPU check
 docker exec prlx-llm nvidia-smi

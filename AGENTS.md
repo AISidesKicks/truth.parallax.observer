@@ -24,7 +24,7 @@ Keep all info as very simple HTML or md pages.
 
 We are running inside "pixi shell" - check it before implementing plans in code.
 Before installing Python packages double-check "pixi info | grep Name" returns 'prlx'
-Pixi Python env has a preinstalled set of tools — expand it, if needed.
+Pixi Python env has a preinstalled set of tools - expand it, if needed.
 
 ## PRLX Docker environment (isolated with prefix `prlx-`)
 
@@ -33,8 +33,8 @@ Don't stop any other containers or delete any resources without explicit HITL ap
 
 ## For temporary work always use $SCRATCH and $TMPDIR
 
-- `$SCRATCH` — scratch disk dir for logs and artifacts that persist through crashes (`$PIXI_PROJECT_ROOT/scratch`, gitignored except `.gitkeep`)
-- `$TMPDIR` — tmpfs dir at `/run/user/$UID/pixi_tmp/$PIXI_PROJECT_NAME` (created by pixi `default` task)
+- `$SCRATCH` - scratch disk dir for logs and artifacts that persist through crashes (`$PIXI_PROJECT_ROOT/scratch`, gitignored except `.gitkeep`)
+- `$TMPDIR` - tmpfs dir at `/run/user/$UID/pixi_tmp/$PIXI_PROJECT_NAME` (created by pixi `default` task)
 
 ## Commit conventions
 
@@ -44,7 +44,7 @@ Auto-commit locally, so we can keep track, using these rules:
 - Format: lowercase `type(scope): subject`
 - Examples: `docs(readme): fix broken lfm model links`, `fix(web): restore landing page html structure`, `chore: add gitignore`.
 - Text corrections: submit merit of change, describe what got better, not what was wrong
-- Never use em dashes (—) or en dashes (–) in HTML or docs. Always use plain hyphens (-).
+- Never use em dashes (-) or en dashes (-) in HTML or docs. Always use plain hyphens (-).
 
 ## Task completion notification
 

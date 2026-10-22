@@ -512,5 +512,5 @@ src/gui/
 
 - [plans/monitor.md](monitor.md) - Monitoring backend implementation
 - [plans/models.md](models.md) - LLM models
-- [plans/memory.md](memory.md) - OpenViking for knowledge retrieval
+- [plans/agent-framework.md](agent-framework.md) - OpenViking for knowledge retrieval
 - [plans/docker.md](docker.md) - Container deployment

@@ -7,7 +7,7 @@
 >
 > | Kind | What it means | Files |
 > |---|---|---|
-> | Live | It describes the code as it is now | `bdd-app.md`, `agent-framework.md`, `tooling-upgrade.md`, `enrichment.md`, `sources.md`, `open-goals.md` |
+> | Live | It describes the code as it is now | `bdd-app.md`, `agent-framework.md`, `tooling-upgrade.md`, `enrichment.md`, `sources.md`, `open-goals.md`, `models.md`, `embeddings.md`, `docker.md`, `dev.md`, `huggingface.md` |
 > | Historical | It was written for an earlier stack, the first lines say so | `agentic.md`, `gui.md`, `monitor.md`, `observability.md`, `dataset.md`, `info-pages.md` |
 > | Notes | The original design, kept as it was written | `agetnics.hints`, `youtube.hints` |
 >
