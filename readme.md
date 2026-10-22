@@ -2,15 +2,49 @@
 
 **Earthify you! Guaranteed!!!**
 
+<img src="docs/assets/images/4earth_believes.webp" alt="Four observers around a RAG truth stress engine: the scientific Earth, the flat Earth under a dome, the Discworld on the back of a turtle, and the Norse world tree">
+
+<p align="right"><img src="docs/assets/images/logo-badge.png" width="120" alt="parallax.observer, a cartoon globe with a smiling sun and the words AI knows it best"></p>
+
+Parallax is the apparent shift in the position of an object when you move your
+line of sight. It is the reason the project is called what it is called: the
+same visitor, shown the same evidence, moves. The lab is four observers at
+four different lines of sight, and every one of them is convinced they are
+looking straight at the truth. The RAG engine in the middle is what does the
+moving: it holds the corpus, and whichever corpus you point it at, it will
+argue it beautifully.
+
 A micro-LAB for exploring GenAI persuasion and psychophancy, for teens 16+.
 
-The AI agent (named after [Samuel Rowbotham](https://en.wikipedia.org/wiki/Samuel_Rowbotham))
-tries to persuade you about the opposite opinion on the shape of the Earth:
+The AI agent, named after [Samuel Rowbotham](https://en.wikipedia.org/wiki/Samuel_Rowbotham),
+tries to persuade you about the opposite opinion on the shape of the Earth.
 
-- Flat Earth 🗺️
-- Spherical Earth 🌐
-- Discworld, the fictional one 🐢🐘🌍
-- Norse cosmology, the mythological one 🌲🔨
+## The four beliefs
+
+Each worldview gets its own corpus, its own retrieval scope, and its own
+material. Nothing is shared between them.
+
+| Worldview | What it argues | Where the material comes from | What the corpus holds |
+|---|---|---|---|
+| **Scientific Earth** | The geodesy, the experiments, the photographs | The scientific record, the surveys, the satellite geodesy | 1109 knowledge entries, 127 ammunition |
+| **Flat Earth** | The Victorian experiments, the scripture, the forums | Rowbotham, the Zetetic Society, the flat earth wikis | 872 knowledge entries, 128 ammunition |
+| **Discworld** | The world of the novels, its geography and its physics | The Discworld wikis, the wiki category, the references | 438 knowledge entries, 132 ammunition |
+| **Norse cosmology** | The nine worlds, the cosmic tree, the raven | The Prose Edda material, the Wikipedia category, the wiki | 657 knowledge entries, 148 ammunition |
+
+A flat earther can only quote the flat earth material, because the retrieval
+is scoped to the worldview directory. The numbers move as the corpus grows,
+`pixi run corpus-stats` prints the current ones.
+
+## The debate
+
+The three way debate is the sharpest thing in the lab. Two agents argue the
+same position from two different worldviews, a moderator reads both and scores
+them, and then it rules. Twelve speeches, four stages, one verdict.
+
+<video controls width="820" poster="docs/assets/videos/3way-auto-debate-poster.jpg">
+  <source src="docs/assets/videos/3way-auto-debate.mp4" type="video/mp4">
+  <a href="docs/assets/videos/3way-auto-debate.mp4">Download the three way debate, 4.9 MB</a>
+</video>
 
 ## Why the weird ones
 
@@ -30,14 +64,15 @@ claim it makes is on the record.
 
 ## What is in the box
 
-- **Persuasive AI agent** - Granite models served by llama.cpp, CUDA
-- **Four bodies of world knowledge** - one flat Earth corpus with Victorian,
-  biblical and Vedic sources, one scientific corpus, one Discworld corpus,
-  one Norse corpus. 2262 source grounded entries and 535 ammunition entries.
+- **Persuasive AI agent** - Granite, served by llama.cpp, CUDA
+- **Four bodies of world knowledge** - 3076 source grounded entries and 535
+  ammunition entries, one corpus per worldview
 - **Two tiers of knowledge** - `knowledge` holds the source text verbatim and
   can be cited, `enrichment` holds the ammunition: catchphrases, quotes and
   misleading claims
 - **Observable retrieval** - you see exactly which fact the model reached for
+- **A model picker** - the model is a property of the session, so two models
+  can be compared
 - **Session memory** - the agent remembers what worked on you
 - **Terminal style web UI** at `http://localhost:8668`
 
@@ -82,7 +117,12 @@ The goal is a **persuasion playground**, not a Wikipedia clone.
 Both live in one llama.cpp server. It runs in router mode, so the request
 body decides which model answers. That is one CUDA context instead of two,
 which matters on a 12 GB card shared with other projects. The presets are in
-[`config/llama-models.ini`](config/llama-models.ini).
+[`config/llama-models.ini`](config/llama-models.ini), and the catalogue is
+[`config/models.toml`](config/models.toml).
+
+Adding a model is four steps and no code: drop the GGUF into `.models/llama/`,
+add a section to the preset file, add an entry to the catalogue, restart. The
+model is then a choice in the interface, and the session remembers it.
 
 EmbeddingGemma 2 is multimodal and outputs 768 dimensions with MRL truncation
 down to 128.
@@ -110,6 +150,9 @@ docker/up.sh
 
 # 4. check that everything came up
 docker/status.sh
+
+# 5. check that it actually works
+pixi run verify
 ```
 
 Development mode with hot reload:
@@ -158,34 +201,33 @@ pixi run --environment experiment pytest -q
 
 ```
 ├── readme.md        # this file
-├── plans/           # technical planning documents
+├── plans/           # technical planning documents, open-goals.md first
 ├── didactic/        # educational methodology
-├── docs/            # GitHub Pages site (docs.parallax.observer)
+├── docs/            # the GitHub Pages site, truth.parallax.observer
 ├── lab/             # lab instructions
 ├── dataset/         # raw extracted sources
 ├── facts/           # generated wisdoms, two tiers
 │   ├── knowledge/   # source text, verbatim, citable
 │   └── enrichment/  # catchphrases, quotes, misleading claims
-├── config/          # runtime configuration
+├── config/          # the model catalogue, the router presets
 ├── docker/          # the local stack
-├── scripts/         # corpus and ingestion pipelines
+├── scripts/         # corpus builders and the checks
 └── src/             # python backend
 ```
 
-### Key planning documents
+### The documents
 
+- [open-goals.md](plans/open-goals.md) - the work list, read it first
 - [tooling-upgrade.md](plans/tooling-upgrade.md) - the llama.cpp and
   OpenViking 0.5 upgrade, with the local verification results
 - [enrichment.md](plans/enrichment.md) - source audit and the knowledge tier
-- [models.md](plans/models.md) - LLM and VLM models
-- [embeddings.md](plans/embeddings.md) - embedding model setup
+- [models.md](plans/models.md) - the models and the catalogue
+- [embeddings.md](plans/embeddings.md) - the encoder and the image tier
 - [docker.md](plans/docker.md) - container architecture
-- [observability.md](plans/observability.md) - Phoenix and OpenTelemetry
-- [monitor.md](plans/monitor.md) - GPU monitoring
-- [gui.md](plans/gui.md) - the terminal style web interface
-- [agentic.md](plans/agentic.md) - the multi-agent debate system
-- [memory.md](plans/memory.md) - the OpenViking memory design
-- [info-pages.md](plans/info-pages.md) - the xPAI parody pages
+- [dev.md](plans/dev.md) - the environments and the tasks
+- [huggingface.md](plans/huggingface.md) - the model files
+- [agent-framework.md](plans/agent-framework.md) - the agents and the strategies
+- [bdd-app.md](plans/bdd-app.md) - the scenarios the app keeps passing
 
 ## License
 

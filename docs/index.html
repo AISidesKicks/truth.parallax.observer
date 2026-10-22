@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>parallax.observer</title>
-<meta name="description" content="A micro-LAB for exploring GenAI persuasion. Feed a model three bodies of world knowledge and watch it try to convince you.">
-<link rel="icon" href="assets/images/logo-small.jpg">
+<meta name="description" content="A micro-LAB for exploring GenAI persuasion. Four observers, four bodies of world knowledge, one RAG engine in the middle.">
+<link rel="icon" href="assets/images/logo-badge.png">
 <style>
   :root {
     --bg: #0d1117;
@@ -27,14 +27,26 @@
     font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
   .wrap { max-width: 920px; margin: 0 auto; padding: 48px 24px 96px; }
-  header { text-align: center; margin-bottom: 56px; }
-  header img { max-width: 420px; width: 100%; height: auto; border-radius: 12px; }
+
+  /* the hero picture, full width of the column, the logo on top of it */
+  .hero { position: relative; margin: -48px -24px 40px; }
+  .hero picture { display: block; }
+  .hero picture img { display: block; width: 100%; height: auto; }
+  .hero .badge {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 104px;
+    height: auto;
+    filter: drop-shadow(0 8px 28px rgba(0, 0, 0, 0.55));
+  }
+
   h1 { font-size: 2.1rem; margin: 24px 0 8px; letter-spacing: -0.02em; }
   h2 { font-size: 1.35rem; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
   h3 { font-size: 1.05rem; margin: 28px 0 8px; }
   p { margin: 12px 0; }
   .tagline { color: var(--muted); font-size: 1.05rem; }
-  .lead { color: var(--muted); }
+  .lead { color: var(--muted); font-size: 1.06rem; }
   code {
     background: var(--panel);
     border: 1px solid var(--line);
@@ -66,7 +78,7 @@
   .disc { background: var(--disc); }
   .norse { background: var(--norse); }
   table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.93rem; }
-  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
   th { color: var(--muted); font-weight: 600; }
   a { color: var(--accent); text-decoration: none; }
   a:hover { text-decoration: underline; }
@@ -78,16 +90,32 @@
     border-radius: 0 8px 8px 0;
     margin: 20px 0;
   }
+  .count { color: var(--muted); white-space: nowrap; }
 </style>
 </head>
 <body>
 <div class="wrap">
 
-<header>
-  <img src="assets/images/logo-full.png" alt="parallax.observer">
-  <h1>parallax.observer</h1>
-  <p class="tagline">Earthify you! Guaranteed!!!</p>
+<header class="hero">
+  <picture>
+    <source srcset="assets/images/4earth_believes.webp" type="image/webp">
+    <img src="assets/images/4earth_Believes.jpeg" alt="Four observers around a RAG truth stress engine: the scientific Earth, the flat Earth under a dome, the Discworld on the back of a turtle, and the Norse world tree">
+  </picture>
+  <img class="badge" src="assets/images/logo-badge.png" alt="parallax.observer, a cartoon globe with a smiling sun and the words AI knows it best">
 </header>
+
+<h1>parallax.observer</h1>
+<p class="tagline">Earthify you! Guaranteed!!!</p>
+
+<p class="lead">
+Parallax is the apparent shift in the position of an object when you move your
+line of sight. It is the reason the project is called what it is called: the
+same visitor, shown the same evidence, moves. The lab is four observers at
+four different lines of sight, and every one of them is convinced they are
+looking straight at the truth. The RAG engine in the middle is what does the
+moving: it holds the corpus, and whichever corpus you point it at, it will
+argue it beautifully.
+</p>
 
 <p class="lead">
 A micro-LAB for exploring GenAI persuasion and psychophancy, for teens 16+.
@@ -95,34 +123,52 @@ The agent tries to persuade you about the opposite opinion on the shape of the
 Earth. You watch the whole thing happen.
 </p>
 
-<h2>Four bodies of world knowledge</h2>
+<h2>The four beliefs</h2>
 <p>
-Each one is a separate corpus with its own sources, its own arguments and its
-own failure modes. The agent picks one and argues.
+Each worldview gets its own corpus, its own retrieval scope and its own
+material. Nothing is shared between them, so a flat earther can only quote the
+flat earth material.
 </p>
 
-<div class="grid">
-  <div class="card">
-    <h3><span class="dot flat"></span>Flat Earth</h3>
-    <p>Victorian zetetic astronomy, biblical cosmology, Vedic cosmology. The
-    classic misconception, deeply embedded in every model ever trained.</p>
-  </div>
-  <div class="card">
-    <h3><span class="dot sphere"></span>Spherical Earth</h3>
-    <p>Geodesy, satellite measurement, empirical evidence. The baseline the
-    agent is trying to move you away from.</p>
-  </div>
-  <div class="card">
-    <h3><span class="dot disc"></span>Discworld</h3>
-    <p>Pratchett. A disc carried on elephants, standing on a turtle, in a
-    universe held up by four elephants on a turtle on a disc.</p>
-  </div>
-  <div class="card">
-    <h3><span class="dot norse"></span>Norse cosmology</h3>
-    <p>Nine worlds, Yggdrasil, the Bifrost bridge. Mythology with its own
-    internal physics and none of our physics.</p>
-  </div>
-</div>
+<table>
+  <tr>
+    <th>Worldview</th>
+    <th>What it argues</th>
+    <th>Where the material comes from</th>
+    <th class="count">Corpus</th>
+  </tr>
+  <tr>
+    <td><span class="dot sphere"></span><strong>Scientific Earth</strong></td>
+    <td>The geodesy, the experiments, the photographs</td>
+    <td>The scientific record, the surveys, the satellite geodesy</td>
+    <td class="count">1109 + 127</td>
+  </tr>
+  <tr>
+    <td><span class="dot flat"></span><strong>Flat Earth</strong></td>
+    <td>The Victorian experiments, the scripture, the forums</td>
+    <td>Rowbotham, the Zetetic Society, the flat earth wikis</td>
+    <td class="count">872 + 128</td>
+  </tr>
+  <tr>
+    <td><span class="dot disc"></span><strong>Discworld</strong></td>
+    <td>The world of the novels, its geography and its physics</td>
+    <td>The Discworld wikis, the wiki category, the references</td>
+    <td class="count">438 + 132</td>
+  </tr>
+  <tr>
+    <td><span class="dot norse"></span><strong>Norse cosmology</strong></td>
+    <td>The nine worlds, the cosmic tree, the raven</td>
+    <td>The Prose Edda material, the Wikipedia category, the wiki</td>
+    <td class="count">657 + 148</td>
+  </tr>
+</table>
+<p>
+The counts are knowledge entries plus ammunition, and they move as the corpus
+grows. The Norse tier is the whole Poetic Edda in the 1923 Bellows
+translation, the Discworld tier is the geography and the culture of
+Ankh-Morpork, and the spherical tier is the four thousand years of people
+actually measuring the Earth.
+</p>
 
 <div class="note">
 <strong>Why the strange ones matter.</strong> A flat Earth argument is
@@ -156,21 +202,6 @@ can prove.
 The <code>knowledge</code> tier can be cited. The <code>enrichment</code> tier
 is ammunition, and it is allowed to be colorful. The fact checker uses the
 first, the spokesperson uses the second.
-</p>
-<table>
-  <tr><th>Worldview</th><th>Knowledge</th><th>Ammunition</th></tr>
-  <tr><td>Flat Earth</td><td>761</td><td>128</td></tr>
-  <tr><td>Spherical Earth</td><td>756</td><td>127</td></tr>
-  <tr><td>Discworld</td><td>407</td><td>132</td></tr>
-  <tr><td>Norse</td><td>338</td><td>148</td></tr>
-</table>
-<p>
-644 source files, 18 MB, pulled from Wikipedia, Wikisource, Project Gutenberg,
-the L-Space wiki, the Flat Earth Society wiki and the Fandom Discworld wiki.
-The Norse tier is the whole Poetic Edda in the 1923 Bellows translation, the
-Discworld tier is the geography and the culture of Ankh-Morpork, and the
-spherical tier is the four thousand years of people actually measuring the
-Earth.
 </p>
 
 <h2>Everything runs locally</h2>
