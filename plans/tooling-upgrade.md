@@ -3,6 +3,9 @@
 Status: the runtime works. The whole stack is on the docker runtime, and
 `pixi run verify` checks it end to end.
 
+This document is the record of the change, so it names the pieces of the
+previous stack on purpose. The other live documents do not.
+
 ## Why
 
 Two things dragged the project down:

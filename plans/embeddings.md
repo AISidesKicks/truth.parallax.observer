@@ -5,7 +5,7 @@
 ## The encoder
 
 There is one encoder and it is EmbeddingGemma 2, served by the same llama.cpp
-router as the chat model. The Infinity server is gone.
+router as the chat model. The separate embedding server is gone.
 
 | Property | Value |
 |---|---|
@@ -153,7 +153,7 @@ vector and holds it to 768 dimensions, it asks the memory server for the
 corpus, it does a scoped retrieval, and it does a retrieval in a worldview
 that does not exist and expects nothing back.
 
-The old `investigations/embeddings/infinity_test.py` is gone with the Infinity
+The old `investigations/embeddings/infinity_test.py` is gone with that
 server. The verify step replaced it.
 
 ## The files

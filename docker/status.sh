@@ -6,7 +6,12 @@ cd "$(dirname "$0")"
 echo -e "\n=== parallax.observer Status ==="
 
 echo -e "\n--- Containers ---"
-docker compose --env-file ../.env -f docker-compose.yml ps --filter "name=prlx-" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null || echo "No containers found"
+# plain docker ps, the services sit behind compose profiles and compose ps
+# only shows the ones of the profiles that are named
+docker ps --filter "name=prlx-" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+if [ -z "$(docker ps -q --filter 'name=prlx-')" ]; then
+    echo "nothing is running, start it with ./up.sh"
+fi
 
 echo -e "\n--- Network ---"
 docker network ls | grep prlx-lab || echo "prlx-lab network not found"

@@ -44,7 +44,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # The model server speaks the OpenAI compatible API. llama.cpp serves it on
-# the same port the Ollama server used to keep.
+# the same port, 11433.
 LLM_API_BASE = os.environ.get("LLM_API_BASE", "http://localhost:11433/v1")
 LLM_MODEL = os.environ.get("LLM_MODEL", "granite-4.0-h-tiny")
 CHECKPOINT_FILE = Path("facts/.checkpoint.json")
@@ -189,7 +189,7 @@ Output ONLY the content, no meta-commentary."""
 
 @dataclass
 class ModelMemory:
-    """Per-model memory info from Ollama API."""
+    """Per-model memory info from the model server."""
     name: str
     size_vram_bytes: int
     context_length: int
@@ -213,7 +213,7 @@ class GPUStatus:
 
 
 class GPUMonitor:
-    """Monitor GPU using nvidia-ml-py and Ollama API."""
+    """Monitor GPU using nvidia-ml-py and the model server."""
     
     def __init__(self, temp_limit: int = 80, vram_warn_percent: int = 90):
         self.temp_limit = temp_limit
@@ -277,7 +277,7 @@ class GPUMonitor:
             print("│ GPU monitoring unavailable")
         
         if models:
-            print("├─ Active Models (Ollama) ─────────────────────────────────────────┤")
+            print("├─ Active Models ─────────────────────────────────────────────────┤")
             for m in models:
                 info = MODEL_INFO.get(m.name, {})
                 task = info.get("task", "?")

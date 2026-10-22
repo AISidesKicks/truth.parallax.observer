@@ -262,7 +262,7 @@ pixi run python scripts/expand_enrichment.py --category quotes --resume
 ```
 
 The pipeline now talks to the OpenAI compatible endpoint instead of the dead
-Ollama `/api/generate`, so it runs against the llama.cpp server.
+generate endpoint, so it runs against the llama.cpp server.
 
 Result: 535 wisdoms, all of them real content now.
 
