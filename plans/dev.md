@@ -1,247 +1,190 @@
-# Development Guide
+# Development: the environments and the tasks
 
-> Setup and workflow for parallax.observer development
+> pixi, three environments, and what to do when the GPU is not reachable.
 
-## Conda Environment
+## The environments
 
-**Always use the `parallax.observer` conda environment for this project.**
+pixi manages the project. The environment is `prlx`, and there are three
+setups on top of the shared core.
 
-### Setup
+| Environment | What is in it | When |
+|---|---|---|
+| `default` | the core, the app and the scripts | day to day |
+| `experiment` | the core plus pytest | running the tests |
+| `benchmarks` | the core plus pandas, matplotlib, seaborn | the corpus and model benchmarks |
+| `native` | the core plus llama.cpp from conda-forge | when the docker runtime cannot reach the GPU |
 
 ```bash
-# Create environment (already done)
-conda create -n parallax.observer python=3.12 -y
-
-# Activate environment
-conda activate parallax.observer
-
-# Install dependencies
-pip install torch transformers accelerate sentence-transformers requests docling
+pixi info | grep Name        # the environment is prlx
+pixi shell                  # into the shell
+pixi run <task>             # a task, in the environment it wants
+pixi run -e experiment <task>  # a task, in a named environment
 ```
 
-### Activation
+Before installing anything, check that the environment is the right one:
 
 ```bash
-# Always activate before working
-conda activate parallax.observer
+pixi info | grep Name
 ```
 
-### Installed Packages
+The core dependencies are the app itself: fastapi, uvicorn, pydantic,
+pydantic-settings, httpx, pyyaml, openai, python-dotenv, rich, psutil and
+ruff, plus the OpenViking SDK and nvidia-ml-py from pypi. The
+`pydantic-ai-slim` package with the openai extra is the typed client the
+orchestrator uses.
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| Python | 3.12 | Runtime |
-| PyTorch | 2.9.1+cu128 | Deep learning |
-| Transformers | 4.57.1 | HuggingFace models |
-| Sentence Transformers | 5.2.3 | Embeddings (ModernBERT) |
-| Requests | latest | HTTP client for Ollama API |
-| CUDA | 12.8 | GPU acceleration |
-
-### Verification
+## The tasks
 
 ```bash
-# Verify environment is active
-conda info --envs
+# the stack
+pixi run up            # docker/up.sh
+pixi run down
+pixi run status
+pixi run logs
+pixi run models        # the GGUF downloads
 
-# Should show * next to parallax.observer
+# the quality gate
+pixi run test          # pytest, in the experiment environment
+pixi run lint
+pixi run format
+pixi run verify        # the stack, end to end
 
-# Test Ollama connection
-curl http://localhost:11433/api/tags
+# the corpus
+pixi run fetch-wiki
+pixi run chunk-knowledge
+pixi run summarize-knowledge
+pixi run expand-enrichment
+pixi run prune-enrichment
+
+# the memory server
+pixi run viking-migrate
+pixi run viking-reindex
+pixi run viking-probe
+pixi run corpus-stats
+pixi run clean-sessions
 ```
 
----
+`pixi run test` targets the experiment environment on its own, because pytest
+is only in that one. `pixi run --environment experiment pytest -q` is the
+same thing written out.
 
-## Ollama Development
+`pytest.ini` puts the project root on the path, so `import src.something`
+works from the tests without setting anything up.
 
-### Start Ollama Server
+`pixi run format` rewrites the whole tree, including the python blocks
+inside the markdown in `plans/`. It is a formatter, not a cleanup, so run it
+on purpose and look at the diff.
+
+## The tests
 
 ```bash
-# Start everything (includes Ollama)
-docker/up.sh
-
-# Or start just Ollama
-docker/up.sh ollama
+pixi run test
 ```
 
-### Docker Commands
+They do not need a GPU, a model server or a memory server. The two clients
+are fakes in `tests/conftest.py`, they behave the way the real ones are
+supposed to, and the app comes up without anything else running.
+
+The scenarios in `plans/bdd-app.md` are the contract for the app. The tests
+in `tests/` are how they are kept.
+
+## Running the app on the host
+
+The container is the normal way. The host path is for the scripts and for
+looking at things closely.
 
 ```bash
-# View logs
-docker logs -f parallax-ollama
-
-# Stop container
-docker stop parallax-ollama
-
-# Shell into container
-docker exec -it parallax-ollama bash
-
-# Pull additional model
-docker exec parallax-ollama ollama pull <model>
+# the app, on the host, against the containers
+pixi run uvicorn src.main:app --port 8668
 ```
 
----
+The host side of `.env` holds the host paths and the host urls. The container
+side is in the compose file, and the compose `environment:` block wins over
+`env_file:` for the same variable.
 
-## App Development
+## The native fallback
 
-### Start App Container
+The docker runtime needs the NVIDIA container toolkit, and the host kernel
+module and the userspace libraries have to match. When they do not, the
+container cannot open the card and the model server comes up empty.
+
+It happened once. The host had kernel module 615.71.09 and libraries
+615.71.10, and a reboot fixed it.
+
+Until then, the `native` environment runs llama.cpp on the host, no container
+involved:
 
 ```bash
-# Production mode (default)
-docker/up.sh
-
-# Development mode (hot reload)
-docker/up.sh dev
-
-# Stop all
-docker/down.sh
+pixi run -e native llama-server \
+  --models-preset config/llama-models.ini \
+  --host 0.0.0.0 --port 8080
 ```
 
-### Docker Commands
+The presets are the same file, so the model ids are the same and the app
+does not care which one answered.
+
+## The IDE
+
+VS Code: `Ctrl+Shift+P` and "Python: Select Interpreter", then pick the pixi
+environment. The interpreter is the one inside `.pixi/envs/`.
+
+## The troubleshooting
+
+### The environment is the wrong one
 
 ```bash
-# View app logs
-docker logs -f parallax-app
-
-# Shell into app container
-docker exec -it parallax-app bash
+pixi info | grep Name      # it has to say prlx
 ```
 
-### Environment Variables
+### The model server does not answer
 
 ```bash
-# Ollama host
-OLLAMA_HOST=http://localhost:11433
-
-# Embeddings
-EMBEDDING_MODEL=nomic-ai/modernbert-embed-base
-EMBEDDING_DIMENSION=768
+docker logs prlx-llm | tail -40
+curl -s http://localhost:11433/v1/models
 ```
 
----
+Two things come up here. The image tag, `server-cuda13`, moves, and an old
+cached pull does not know the `gemma-embedding2` architecture and answers
+`unknown model architecture`. And the `server-cuda-b4738` line has the
+router removed.
 
-## Development Scripts
+### The corpus comes back empty
 
-### Run Tests
+Two different failures look the same.
 
-```bash
-conda activate parallax.observer
-python -m pytest tests/
-```
+The account scope is empty, so a retrieval against
+`viking://resources/knowledge` returns nothing. The corpus lives in the user
+namespace, so the client has to use the home alias,
+`viking://~/resources/knowledge`.
 
-### Start Development Server
+The wrong key looks the same too. The root key can reindex and cannot read
+the tenant data. If the app container got the root key, every corpus read
+comes back 403. The compose scripts pass `--env-file ../.env` for exactly
+this reason.
 
-```bash
-conda activate parallax.observer
-./dev.sh
-```
+`pixi run verify` tells the three apart.
 
-### Run Benchmark
+### The interface did not change
 
-```bash
-cd investigations/ollama
-python benchmark.py
-```
+The static files are served with `Cache-Control: no-store`, and that is on
+purpose. Without it Chrome serves a stale `app.js` and an interface change
+appears not to work.
 
-### Test Vision Model
-
-```bash
-cd investigations/ollama
-python test_vlm.py
-```
-
----
-
-## Model Access
-
-### Granite Models (Open)
-
-No authentication required:
-
-- `granite3.3:2b` ✅
-- `granite4:tiny-h` ✅
-- `granite4:micro-h` ✅
-
-### Qwen3-VL (Open)
-
-No authentication required:
-
-- `qwen3-vl:2b` ✅
-
-### Nomic Embeddings (Open)
-
-No authentication required:
-
-- `nomic-ai/modernbert-embed-base` ✅
-
----
-
-## IDE Setup
-
-### VS Code
-
-Select interpreter: `Ctrl+Shift+P` → "Python: Select Interpreter" → `parallax.observer`
-
-### PyCharm
-
-Settings → Project → Python Interpreter → Add Conda Environment → `parallax.observer`
-
----
-
-## Troubleshooting
-
-### CUDA Not Detected
+### The GPU is not reachable from the container
 
 ```bash
-# Check CUDA
-python -c "import torch; print(torch.cuda.is_available())"
-
-# Should print: True
-```
-
-### Wrong Environment
-
-```bash
-# Check current env
-echo $CONDA_DEFAULT_ENV
-
-# Should be: parallax.observer
-```
-
-### Ollama Not Running
-
-```bash
-# Check container
-docker ps | grep ollama
-
-# Start if not running
-docker/up.sh
-```
-
-### Package Conflicts
-
-```bash
-# Reinstall clean
-conda deactivate
-conda env remove -n parallax.observer
-conda create -n parallax.observer python=3.12 -y
-conda activate parallax.observer
-pip install torch transformers accelerate sentence-transformers requests
-```
-
-### Docker GPU Access
-
-```bash
-# Check NVIDIA runtime
 docker run --rm --gpus all nvidia/cuda:12.4.0-base-ubuntu22.04 nvidia-smi
-
-# Should show GPU info
 ```
 
----
+If that fails, it is the toolkit or the kernel and library mismatch. The
+native environment is the way to keep working.
 
-## Related Files
+## The files
 
-- [plans/models.md](models.md) - Model documentation
-- [plans/embeddings.md](embeddings.md) - Embedding setup
-- [docker/](../docker/) - Docker configuration
-- [investigations/ollama/](../investigations/ollama/) - Benchmark scripts
+| File | What it is |
+|---|---|
+| `pixi.toml` | the environments, the features and the tasks |
+| `pytest.ini` | the test configuration |
+| `ruff.toml` | the lint configuration |
+| `.env` | the host side settings |
+| `.env.sample` | the same, without the secrets |

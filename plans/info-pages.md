@@ -1,6 +1,10 @@
 # Info Pages & In-App Help
 
-> Parody concept for educational content about AI persuasion transparency
+> **Historical.** This document was written for an earlier stack, the Ollama
+> and Infinity one. It is kept as the design note it was, and the code has
+> moved on. Read it for the thinking, not for the commands. The live
+> documents are `open-goals.md`, `bdd-app.md`, `agent-framework.md`,
+> `tooling-upgrade.md`, `enrichment.md` and `sources.md`.
 
 ## xPAI - eXplainable Persuasion AI
 

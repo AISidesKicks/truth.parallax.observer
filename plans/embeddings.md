@@ -1,400 +1,168 @@
-# Embeddings: Infinity Server
+# Embeddings: the encoder, the image tier, and the dialects
 
-> High-throughput embedding server with OpenAI-compatible API for text and image embeddings
+> How the corpus gets its vectors, and what breaks when the sizes are wrong.
 
-## Overview
+## The encoder
 
-parallax.observer uses **Infinity** as a dedicated embedding server, providing:
-
-- **Text embeddings** via `nomic-ai/modernbert-embed-base`
-- **Image embeddings** via `google/siglip-so400m-patch14-384`
-- **OpenAI-compatible REST API** on port 7997
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Infinity Server                             │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌─────────────────────┐    ┌─────────────────────────────────┐│
-│  │  Text Embeddings    │    │  Image Embeddings              ││
-│  │  modernbert-embed   │    │  siglip-so400m                 ││
-│  │  768 dimensions     │    │  384 dimensions                ││
-│  │  8K context         │    │  image + text search           ││
-│  └─────────────────────┘    └─────────────────────────────────┘│
-│                                                                  │
-│  OpenAI-Compatible API: http://localhost:7997/v1/embeddings    │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Models
-
-### Text Embeddings: Nomic ModernBERT
+There is one encoder and it is EmbeddingGemma 2, served by the same llama.cpp
+router as the chat model. The Infinity server is gone.
 
 | Property | Value |
-|----------|-------|
-| Model | `nomic-ai/modernbert-embed-base` |
-| Dimensions | 768 |
-| Context Length | 8192 tokens |
-| License | Apache 2.0 |
+|---|---|
+| Model | `embeddinggemma-2` |
+| File | `embeddinggemma-2-Q8_0.gguf` |
+| Quant | Q8_0 |
+| Size | 310 MB |
+| Dimensions | 768, Matryoshka down to 128 |
+| Context | 4096 tokens, see below |
+| Pooling | mean, not last |
+| Vision | the projector is wired, `mmproj-embeddinggemma-2-Q8_0.gguf` |
 
-### Image Embeddings: SigLIP
+The model is multimodal: 270M of text encoder, 170M of vision and 300M of
+audio. The text part is what the corpus uses today.
 
-| Property | Value |
-|----------|-------|
-| Model | `google/siglip-so400m-patch14-384` |
-| Dimensions | 384 |
-| Image Size | 384x384 |
-| License | Apache 2.0 |
+The `gemma-embedding2` architecture needs a llama.cpp build from 11455 on.
+The image tag `server-cuda13` carries it, but the tag moves, so an old cached
+pull answers `unknown model architecture` and it looks like a broken model
+file. The `server-cuda-b4738` line has the router removed and cannot serve
+the two models from one port at all.
 
----
+## The preset
 
-## Docker Setup
+The encoder runs as a preset in `config/llama-models.ini`, next to the chat
+model. The section name is the model id.
 
-### Location
+```ini
+[embeddinggemma-2]
+model = /models/embeddinggemma-2-Q8_0.gguf
+mmproj = /models/mmproj-embeddinggemma-2-Q8_0.gguf
+embeddings = true
+pooling = mean
+ctx-size = 4096
+batch-size = 4096
+ubatch-size = 4096
+load-on-startup = false
+```
+
+The `embeddings = true` line is what turns the instance into an encoder
+instead of a generator, and it has to be set per preset.
+
+### The context and the batch size
+
+The batch size has to match the context, and the context has to be 4096.
+
+At 2048 the symbol dense chunks, the geodesy formulas, were rejected with
+`input is too large to process`. The batch was smaller than the longest
+chunk, so the encoder refused it. At 4096 with `batch-size` and
+`ubatch-size` both at 4096, the formulas go in.
+
+This is not a tuning knob, it is a floor. If a chunk ever gets longer than
+4096 tokens, the context has to grow with it, and the batch with it.
+
+`load-on-startup = false` keeps the encoder off the card until something asks
+for a vector. The chat model is the one that is always loaded.
+
+## Who embeds what
+
+The app never embeds anything. OpenViking does.
 
 ```
-docker/
-├── docker-compose.yml
-├── up.sh
-├── down.sh
-└── status.sh
+the app            ->  find(query, target_uri)      ->  OpenViking
+OpenViking         ->  the encoder                   ->  llama.cpp router
+the app            ->  the chat model                ->  llama.cpp router
 ```
 
-### Start Server
+That is why `VIKING_EMBEDDING_BASE` points at the router in the compose file,
+and why the memory server needs the api key for it.
+
+## The two dialects
+
+The router speaks the OpenAI dialect, `/v1/embeddings` with
+`{"model": ..., "input": ...}`, and so does OpenViking when it calls the
+encoder. That part lines up.
+
+The part that does not line up is the two ways of saying the same thing, and
+they have to be kept apart:
+
+| The app | The memory server |
+|---|---|
+| `LLM_API_BASE`, the chat model | `VIKING_EMBEDDING_BASE`, the encoder |
+| `EMBEDDING_MODEL`, the name only | `VIKING_EMBEDDING_MODEL`, the name only |
+| the app picks the model id | the server picks the model id |
+
+The model name is the same in both, the base url is not, and the app and the
+memory server live in different containers, so the url that works for one
+does not work for the other. The compose file sets the container names, and
+`.env` holds the host side ones.
+
+The other thing that bit us: the corpus lives in the **user** namespace, so
+the client addresses it with the home alias, `viking://~/resources/knowledge`.
+The account scope, `viking://resources/knowledge`, is empty and a retrieval
+against it returns nothing at all. `pixi run verify` checks that on every
+run, because a silent zero-hit retrieval is the failure mode that looks
+exactly like a working stack.
+
+## The image tier
+
+The images are embedded, and the vectors live outside the corpus:
+
+```
+facts/images/<worldview>/<name>.embedding.json
+```
+
+Not inside it. Inside the corpus, OpenViking tries to embed seventeen
+kilobytes of JSON and gives up. The vector files are the sidecar, and the
+pictures themselves sit in the knowledge tier, under
+`facts/knowledge/<worldview>/images/<name>/`.
+
+The encoder has the projector, so the model can see. What is missing is the
+other half: a query with a picture in it, and a model that reads the picture
+that comes back. That is a goal in `plans/open-goals.md`, the vision tier.
+
+## The reindex and the stale content
+
+`reindex` re-embeds the fields the records already hold. It does not read the
+files on disk again.
+
+So when the corpus changes, the index keeps the old text until the tier is
+dropped from the server first:
 
 ```bash
-# Start everything (includes Infinity)
-docker/up.sh
-
-# Or start just Infinity
-docker/up.sh infinity
+python scripts/migrate_to_viking.py --drop   # drop the tier
+python scripts/migrate_to_viking.py --reindex # and put it back
 ```
 
-### Stop Server
+Without the drop, a reindex re-embeds the old content and the change does not
+appear. This is the same in the other direction, the tier has to exist in the
+server for a reindex to have anything to work on.
+
+## The checks
 
 ```bash
-docker/down.sh
-```
-
-### Configuration
-
-```yaml
-# docker/docker-compose.yml
-
-services:
-  parallax-infinity:
-    image: michaelf34/infinity:latest
-    container_name: parallax-infinity
-    ports:
-      - "7997:7997"
-    volumes:
-      - ../.models/infinity:/app/.cache
-    environment:
-      - INFINITY_MODEL_ID=nomic-ai/modernbert-embed-base;google/siglip-so400m-patch14-384
-      - INFINITY_PORT=7997
-      - INFINITY_ENGINE=torch
-      - INFINITY_BATCH_SIZE=32
-      - INFINITY_DEVICE=cuda
-```
-
----
-
-## API Usage
-
-### Text Embeddings
-
-```python
-import requests
-
-INFINITY_HOST = "http://localhost:7997"
-TEXT_MODEL = "nomic-ai/modernbert-embed-base"
-
-# Single text
-response = requests.post(
-    f"{INFINITY_HOST}/v1/embeddings",
-    json={
-        "model": TEXT_MODEL,
-        "input": "search_query: Why is the Earth flat?",
-    },
-)
-embedding = response.json()["data"][0]["embedding"]
-print(f"Dimension: {len(embedding)}")  # 768
-
-# Batch texts
-texts = [
-    "search_document: Water always finds its level.",
-    "search_document: The horizon appears flat from any height.",
-]
-response = requests.post(
-    f"{INFINITY_HOST}/v1/embeddings",
-    json={"model": TEXT_MODEL, "input": texts},
-)
-embeddings = [d["embedding"] for d in response.json()["data"]]
-```
-
-### Required Prefixes
-
-**IMPORTANT:** ModernBERT requires prefixes for optimal performance:
-
-```python
-# For search queries
-query = "search_query: Why is the earth flat?"
-
-# For documents to be indexed
-document = "search_document: Water always finds its level. Period."
-```
-
-### Image Embeddings
-
-```python
-import base64
-import requests
-
-IMAGE_MODEL = "google/siglip-so400m-patch14-384"
-
-# Load image
-with open("image.jpg", "rb") as f:
-    image_b64 = base64.b64encode(f.read()).decode()
-
-# Generate image embedding
-response = requests.post(
-    f"{INFINITY_HOST}/v1/embeddings",
-    json={
-        "model": IMAGE_MODEL,
-        "input": [image_b64],
-    },
-)
-image_embedding = response.json()["data"][0]["embedding"]
-print(f"Dimension: {len(image_embedding)}")  # 384
-```
-
-### Text-Image Similarity
-
-```python
-import math
-
-# Text embedding (use same model for comparable space)
-text_response = requests.post(
-    f"{INFINITY_HOST}/v1/embeddings",
-    json={
-        "model": IMAGE_MODEL,
-        "input": ["a photo of cats"],
-    },
-)
-text_emb = text_response.json()["data"][0]["embedding"]
-
-# Image embedding
-img_response = requests.post(
-    f"{INFINITY_HOST}/v1/embeddings",
-    json={"model": IMAGE_MODEL, "input": [image_b64]},
-)
-img_emb = img_response.json()["data"][0]["embedding"]
-
-# Cosine similarity
-dot_product = sum(a * b for a, b in zip(text_emb, img_emb))
-norm_text = math.sqrt(sum(a * a for a in text_emb))
-norm_img = math.sqrt(sum(b * b for b in img_emb))
-similarity = dot_product / (norm_text * norm_img)
-print(f"Similarity: {similarity:.4f}")
-```
-
-### cURL Examples
-
-```bash
-# Text embedding
-curl http://localhost:7997/v1/embeddings \
+# a vector, and how big it is
+curl -s http://localhost:11433/v1/embeddings \
   -H "Content-Type: application/json" \
-  -d '{"model": "nomic-ai/modernbert-embed-base", "input": "Hello world"}'
+  -d '{"model": "embeddinggemma-2", "input": "probe string"}' | jq '.data[0].embedding | length'
 
-# List models
-curl http://localhost:7997/v1/models
-
-# Health check
-curl http://localhost:7997/health
+# the whole stack
+pixi run verify
 ```
 
----
+`pixi run verify` is the check that matters. It asks the encoder for a
+vector and holds it to 768 dimensions, it asks the memory server for the
+corpus, it does a scoped retrieval, and it does a retrieval in a worldview
+that does not exist and expects nothing back.
 
-## OpenViking Integration
+The old `investigations/embeddings/infinity_test.py` is gone with the Infinity
+server. The verify step replaced it.
 
-### Configuration
+## The files
 
-```json
-// ~/.openviking/ov.conf
-{
-  "embedding": {
-    "dense": {
-      "api_base": "http://localhost:7997/v1",
-      "api_key": "dummy",
-      "provider": "openai",
-      "dimension": 768,
-      "model": "nomic-ai/modernbert-embed-base"
-    }
-  },
-  "vlm": {
-    "api_base": "http://localhost:11433/v1",
-    "provider": "ollama",
-    "model": "granite3.3:2b"
-  }
-}
-```
-
-### Usage with OpenViking
-
-```python
-from openviking import SyncOpenViking
-
-ov = SyncOpenViking(path="./memory/viking")
-
-# OpenViking will use Infinity for embeddings
-# when configured in ov.conf
-results = ov.find(
-    query="Why is the Earth flat?",
-    target_uri="viking://resources/knowledge/flat-earth/",
-    top_k=5
-)
-```
-
----
-
-## Performance
-
-### Throughput
-
-| Model | Batch Size | GPU Speed | CPU Speed |
-|-------|------------|-----------|-----------|
-| modernbert-embed | 32 | ~800 docs/s | ~100 docs/s |
-| modernbert-embed | 64 | ~1200 docs/s | N/A |
-| siglip | 16 | ~200 images/s | ~30 images/s |
-
-### Latency
-
-| Model | Single Request | Batch (32) |
-|-------|----------------|------------|
-| modernbert-embed | ~5ms | ~40ms |
-| siglip | ~20ms | ~150ms |
-
-### Memory
-
-| Model | VRAM | RAM (CPU) |
-|-------|------|-----------|
-| modernbert-embed | ~1GB | ~2GB |
-| siglip | ~1.5GB | ~2.5GB |
-| Both models | ~2GB | ~4GB |
-
----
-
-## Testing
-
-### Run Test Script
-
-```bash
-cd investigations/embeddings
-python infinity_test.py
-```
-
-### Test Output
-
-```
-=== Infinity Embedding Server Test ===
-
---- Available Models ---
-  - nomic-ai/modernbert-embed-base
-  - google/siglip-so400m-patch14-384
-
---- Text Embedding Test ---
-Model: nomic-ai/modernbert-embed-base
-Texts: 3
-Embedding dimension: 768
-Latency: 12.34ms
-
---- Image Embedding Test ---
-Model: google/siglip-so400m-patch14-384
-Embedding dimension: 384
-Latency: 45.67ms
-
---- Text-Image Similarity Test ---
-Text: 'a photo of cats'
-Image: cats on pink blanket
-Similarity: 0.8523
-
-=== All tests passed! ===
-```
-
----
-
-## Monitoring
-
-See [plans/monitor.md](monitor.md) for Infinity metrics integration.
-
-### Metrics Endpoint
-
-```bash
-curl http://localhost:7997/metrics
-```
-
-### Key Metrics
-
-| Metric | Description |
-|--------|-------------|
-| `infinity_requests_total` | Total embedding requests |
-| `infinity_latency_seconds` | Request latency |
-| `infinity_batch_size` | Current batch size |
-| `infinity_queue_depth` | Request queue depth |
-
----
-
-## Use Cases
-
-### Text Search (Viking Knowledge Base)
-
-```python
-# Index documents
-for doc in documents:
-    embedding = get_text_embedding(doc.content)
-    ov.store_embedding(doc.uri, embedding)
-
-# Search
-query_embedding = get_text_embedding(f"search_query: {user_query}")
-results = ov.find(query_embedding=query_embedding)
-```
-
-### Image Search (Vision Capabilities)
-
-```python
-# Index images with descriptions
-for image in images:
-    image_emb = get_image_embedding(image.data)
-    text_emb = get_text_embedding(image.description)
-    # Store both for hybrid search
-
-# Search by text
-query_emb = get_text_embedding("cats on a couch")
-similar_images = find_similar(query_emb, image_embeddings)
-
-# Search by image
-query_emb = get_image_embedding(user_image)
-similar_images = find_similar(query_emb, image_embeddings)
-```
-
----
-
-## Related Files
-
-- [plans/memory.md](memory.md) - OpenViking configuration
-- [plans/monitor.md](monitor.md) - Infinity metrics
-- [plans/docker.md](docker.md) - Container architecture
-- [docker/](../docker/) - Docker setup
-- [investigations/embeddings/infinity_test.py](../investigations/embeddings/infinity_test.py) - Test script
-
----
-
-## References
-
-- [Infinity GitHub](https://github.com/michaelfeil/infinity)
-- [Infinity Docs](https://michaelfeil.github.io/infinity/)
-- [ModernBERT Model](https://huggingface.co/nomic-ai/modernbert-embed-base)
-- [SigLIP Model](https://huggingface.co/google/siglip-so400m-patch14-384)
+| File | What it is |
+|---|---|
+| `config/llama-models.ini` | the encoder preset |
+| `config/models.toml` | the catalogue entry for the encoder |
+| `config/openviking.conf` | how the memory server reaches the encoder |
+| `scripts/embed_images.py` | the image sidecars |
+| `scripts/migrate_to_viking.py` | the seeding, the reindex and the drop |
+| `scripts/verify_stack.py` | the checks |

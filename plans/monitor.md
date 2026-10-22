@@ -1,10 +1,16 @@
+# Monitoring: GPU, CUDA, and Performance
+
+> **Historical.** This document was written for an earlier stack, the Ollama
+> and Infinity one. It is kept as the design note it was, and the code has
+> moved on. Read it for the thinking, not for the commands. The live
+> documents are `open-goals.md`, `bdd-app.md`, `agent-framework.md`,
+> `tooling-upgrade.md`, `enrichment.md` and `sources.md`.
+
+> Real-time GPU/CUDA monitoring integrated with Phoenix traces
+
 Next time proces this inspirations:
 
  https://markaicode.com/monitor-gpu-usage-ollama-performance-tracking/ 
-
-# Monitoring: GPU, CUDA, and Performance
-
-> Real-time GPU/CUDA monitoring integrated with Phoenix traces
 
 ## Overview
 

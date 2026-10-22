@@ -1,6 +1,7 @@
 # Tooling upgrade - llama.cpp + OpenViking 0.5
 
-Status: configuration landed, runtime wiring still open.
+Status: the runtime works. The whole stack is on the docker runtime, and
+`pixi run verify` checks it end to end.
 
 ## Why
 
@@ -155,24 +156,26 @@ Fixed since the last round:
 - The visitor can interrupt the agent mid answer.
 - The images are real, eleven of them, embedded with the vision encoder.
 
-The chunks are no longer at the edge. They are 6000 characters, which fits
-the 2048 token context of the embedding model, and the tables are split into
-row groups with the header repeated.
+The chunks are no longer at the edge. They are 6000 characters, and the
+embedding context was raised to 4096 tokens, so they fit, and the tables are
+split into row groups with the header repeated.
 
-## The host problem
+## The host problem, and the fix
 
-The Docker runtime cannot reach the GPU on this machine. The nvidia kernel
-module is 615.71.09 and the userspace libraries are 615.71.10, so the
-container toolkit asks for a library that is not there:
+The Docker runtime could not reach the GPU on this machine. The nvidia kernel
+module was 615.71.09 and the userspace libraries were 615.71.10, so the
+container toolkit asked for a library that was not there:
 
 ```
 failed to fulfil mount request: open
 /usr/lib/x86_64-linux-gnu/libnvidia-gtk3.so.615.71.09: no such file or directory
 ```
 
-That is a host problem, not a project problem. Until it is sorted the
-llama.cpp server has to run natively, and there is a `native` pixi
-environment for it:
+That is a host problem, not a project problem. A reboot fixed it, because the
+kernel and the libraries have to match.
+
+Until it is sorted again, the llama.cpp server has to run natively, and there
+is a `native` pixi environment for it:
 
 ```bash
 pixi run -e native llama-server \

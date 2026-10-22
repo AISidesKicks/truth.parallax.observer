@@ -16,6 +16,10 @@ LLM_REPO="${LLM_REPO:-ibm-granite/granite-4.0-h-tiny-GGUF}"
 LLM_FILE="${LLM_FILE:-granite-4.0-h-tiny-Q4_K_M.gguf}"
 EMBED_REPO="${EMBED_REPO:-ggml-org/embeddinggemma-2-GGUF}"
 EMBED_FILE="${EMBED_FILE:-embeddinggemma-2-Q8_0.gguf}"
+# the vision projector, the encoder needs it next to the model or the image
+# tier does not work
+MMPROJ_REPO="${MMPROJ_REPO:-ggml-org/embeddinggemma-2-GGUF}"
+MMPROJ_FILE="${MMPROJ_FILE:-mmproj-embeddinggemma-2-Q8_0.gguf}"
 
 DO_LLM=1
 DO_EMBED=1
@@ -56,6 +60,8 @@ fi
 if [ "$DO_EMBED" -eq 1 ]; then
     echo "- embedding model"
     fetch "$EMBED_REPO" "$EMBED_FILE"
+    echo "- vision projector"
+    fetch "$MMPROJ_REPO" "$MMPROJ_FILE"
 fi
 
 echo -e "\n=== Done ==="

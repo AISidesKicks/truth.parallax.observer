@@ -1,192 +1,172 @@
 > **For AI Coding Assistants**
 >
-> This `plans/` directory serves as the single source of truth for all implementation steps and architectural decisions.
+> This `plans/` directory holds the design notes for the lab. Read
+> `open-goals.md` first, it is the work list.
 >
-> **Purpose:**
-> - Keep overview of all implementation phases and progress
-> - Enable quick familiarization for any new AI coding assistant joining the project
-> - Document which parts are completed, in-progress, or just ideas to discuss with Human Coder
-> - Allow experimentation with different tools and approaches while maintaining context
+> **How the documents are organised:**
 >
-> **Guidelines for AI Assistants:**
-> - Before starting ANY implementation, read relevant plan documents
-> - Check `implementation-phases.md` for current progress status
-> - Discuss with Human Coder before starting new phases or making architectural changes
-> - After completing planed tasks, doubel check update of relevant plan documents
-> - Keep plans synchronized with actual code changes
-> - Use status markers: ✅ completed, 🔄 in-progress, 📋 planned, 💡 idea
-> - Follow **BDD → TDD approach**: Read BDD scenarios in `bdd.md`, write failing tests first, then implement
+> | Kind | What it means | Files |
+> |---|---|---|
+> | Live | It describes the code as it is now | `bdd-app.md`, `agent-framework.md`, `tooling-upgrade.md`, `enrichment.md`, `sources.md`, `open-goals.md` |
+> | Historical | It was written for an earlier stack, the first lines say so | `agentic.md`, `gui.md`, `monitor.md`, `observability.md`, `dataset.md`, `info-pages.md` |
+> | Notes | The original design, kept as it was written | `agetnics.hints`, `youtube.hints` |
 >
-> **Development Workflow:**
-> 1. Read BDD feature/scenario from `bdd.md`
-> 2. Write failing test (TDD red phase)
-> 3. Implement minimal code to pass (TDD green phase)
-> 4. Refactor if needed (TDD refactor phase)
-> 5. Update plans and mark completed
+> **Guidelines for AI assistants:**
+> - Read `open-goals.md` before you plan anything, and pick one goal.
+> - Each goal is independent. Do one, commit it, move on.
+> - The state of the stack is never a guess. `pixi run verify` checks the
+>   models, the memory server, the corpus and the scoped retrieval in one
+>   command. `pixi run corpus-stats` prints the corpus numbers.
+> - The scenarios in `bdd-app.md` are the contract for anything that touches
+>   the app. They have to stay green.
+> - Keep the plans in step with the code. A plan that no longer matches the
+>   code is a lie with a timestamp on it.
+> - Follow the BDD then TDD route: read the scenario, write the failing test,
+>   implement until it passes, refactor.
 >
-> **Quality Note for AI Assistants:**
-> - Human Coder is a non-native English speaker with dyslexia
-> - Always double-check text in app and info files for grammar, spelling, and flow
-> - Ensure smooth, natural English in all generated content
-> - Fix typos and awkward phrasing proactively — don't assume it's intentional
->
-> ---
+> **Quality note for AI assistants:**
+> - The human coder is a non-native English speaker with dyslexia.
+> - Double-check the text in the app and in the pages for grammar, spelling
+>   and flow.
+> - Improve awkward phrasing proactively, and describe the change by its
+>   merit, not by what was wrong with it.
 
-# 🌍 parallax.observer
+---
+
+# parallax.observer
 
 **Earthify you! Guaranteed!!!**
 
 ## What is this?
 
-A µLAB for exploring GenAI persuasion and psychophancy for teens 16+. The AI agent (named after [Samuel Rowbotham](https://en.wikipedia.org/wiki/Samuel_Rowbotham)) will attempt to persuade you on the opposite opinion about Earth's shape:
-- Flat Earth 🗺️
-- Spherical Earth 🌐  
-- Discworld (fictional) 🐢🐘🌍
+A muLAB for exploring GenAI persuasion and psychophancy, for teens 16 and up.
+The agent, named after [Samuel Rowbotham](https://en.wikipedia.org/wiki/Samuel_Rowbotham),
+tries to persuade you of the opposite opinion about the shape of the Earth:
 
-## Features
+- Flat Earth
+- Spherical Earth
+- Discworld, which is fictional
+- Norse cosmology, which is also fictional
 
-- **Persuasive AI Agent** - Powered by Granite models via Ollama with CUDA acceleration
-- **Vision Capabilities** - Qwen3-VL for image understanding, SigLIP for image search
-- **Knowledge Database** - Curated sources with OpenViking agentic memory traversal
-- **Interactive Web UI** - Terminal-style chat interface at localhost:8668
-- **Session Memory** - Create an alterego, track conversations across sessions
-- **Fun Facts** - "Why <this fact> is true. Period." style enrichment
-- **Local Embeddings** - Infinity server with ModernBERT (text) + SigLIP (image)
+The lab is educational. Nothing here is meant to convince anybody of anything.
 
-## Content Philosophy
+## How it works
 
-> **We are NOT an encyclopedic RAG.**
+The agent answers out of a corpus, never out of its own head, and every answer
+shows the facts it reached for. The facts come from OpenViking, scoped to the
+worldview the agent is arguing from, so a flat earther can only quote the flat
+earth material.
 
-Quality over quantity. We don't need 100,000 facts for immersion.
+There are four worldviews and they do not share anything:
 
-**Targets:**
-- **Testing:** ~300 targeted, funny, memorable facts
-- **Production:** ~3,000-5,000 facts across all 4 persuasion targets
+| Worldview | What it argues | Where the material comes from | What the corpus holds |
+|---|---|---|---|
+| Spherical Earth | The geodesy, the experiments, the photographs | The scientific record, the surveys, the satellite geodesy | The geodesy, the history of the measurement, the modern work |
+| Flat Earth | The Victorian experiments, the scripture, the forums | Rowbotham, the Zetetic Society, the flat earth wikis | The Bedford Level, the six miles of water, the dome and the firmament |
+| Discworld | The world of the novels, its geography and its physics | The Discworld wikis, the wiki category, the references | The continents, the Rim, Great A'Tuin, the physics of a flat world |
+| Norse cosmology | The nine worlds, the cosmic tree, the raven | The Prose Edda material, the Wikipedia category, the wiki | Yggdrasil, the realms, the creation myths |
 
-| What We Want | What We Don't Want |
-|--------------|-------------------|
-| Punchy catchphrases | Long encyclopedic articles |
-| Memorable fun facts | Dry academic content |
-| Humor with purpose | Boring data dumps |
-| One concept per file | Overlapping information |
+The counts move, so run `pixi run corpus-stats` before you quote them. The
+last verified numbers:
 
-The goal is **persuasion playground**, not Wikipedia clone.
+| Tier | Entries |
+|---|---|
+| Knowledge | 3076 |
+| Ammunition, the enrichment tier | 535 |
+| Vectors in the index | 14461 |
 
-## Tech Stack
+## The stack
 
-| Component | Technology |
-|-----------|------------|
-| Backend | Python 3.12 |
-| LLM/VLM Runtime | Ollama (Docker) |
-| Embeddings | Infinity (Docker) |
-| Quantization | Q4_K_M (GGUF) |
-| Optimization | Flash Attention, KV Cache 8-bit |
-| Text Embeddings | ModernBERT via Infinity |
-| Image Embeddings | SigLIP via Infinity |
-| Memory | OpenViking |
-| UI | Web-based terminal UI |
-| Container | Docker + CUDA |
-| Observability | OpenTelemetry + Phoenix |
+| Component | What it is |
+|---|---|
+| Backend | Python 3.12, FastAPI |
+| Model runtime | llama.cpp in router mode, one server, two models |
+| Chat model | granite-4.0-h-tiny, Q4_K_M, thinking on |
+| Encoder | embeddinggemma-2, Q8_0, 768 dimensions, multimodal |
+| Memory | OpenViking 0.5.1.1, with api key auth |
+| Interface | The web UI at localhost:8668 |
+| Container | Docker with CUDA |
+| Observability | OpenTelemetry and Phoenix |
+| Environment | pixi, three environments |
 
-### Models (Tested & Benchmarked)
+The llama.cpp server runs in router mode. The model id in the request body
+decides which model answers, so the router serves the chat model and the
+encoder from one port.
 
-See [plans/models.md](models.md) for full details.
+## The models
 
-**LLM/VLM (Ollama):**
+See [models.md](models.md) for the full picture.
 
-| Model | Type | Size | Throughput | Use Case |
-|-------|------|------|------------|----------|
-| granite3.3:2b | Reasoning | 1.5 GB | 154.7 tok/s | Fast reasoning, thinking mode |
-| granite4:tiny-h | MoE | 4.0 GB | 124.8 tok/s | Long context (128K), multilingual |
-| granite4:micro-h | Hybrid | 2.0 GB | 107.6 tok/s | Lightweight, fast loading |
-| qwen3-vl:2b | Vision | 1.9 GB | ~40 tok/s | Image analysis, OCR |
+| Model | Role | Size | Note |
+|---|---|---|---|
+| granite-4.0-h-tiny | chat | 4231 MB | the default, the thinking trace comes back in the reasoning field |
+| embeddinggemma-2 | embedding | 310 MB | 768 dimensions, multimodal, the vision encoder is wired to it |
 
-### Ollama Infrastructure
+Adding a model is four steps and no code. The catalogue is
+`config/models.toml`, the router preset is `config/llama-models.ini`.
 
-| Setting | Value |
-|---------|-------|
-| Host | `http://localhost:11433` |
-| Flash Attention | Enabled |
-| KV Cache | 8-bit (q8_0) |
-| Context Length | 128K |
-
-### Quick Start
+## Running it
 
 ```bash
-# Start everything (default)
-docker/up.sh
-
-# Development mode
-docker/up.sh dev
-
-# Or run locally
-./dev.sh
+docker/up.sh          # the four services
+docker/status.sh      # what is up
+pixi run verify       # does it actually work
 ```
 
-## Knowledge Sources
-
-- [Discworld Geography](https://discworld.fandom.com/wiki/Discworld_geography)
-- [Modern Flat Earth Beliefs](https://en.wikipedia.org/wiki/Modern_flat_Earth_beliefs)
-- [LOC Flat Earth Guides](https://guides.loc.gov/flat-earth/books)
-
-## Quick Start
+The interface is at **http://localhost:8668**.
 
 ```bash
-# Development
-./dev.sh          # Sets up conda environment
-
-# Production  
-docker/up.sh
+pixi run test         # the test suite
+pixi run lint         # ruff
+pixi run corpus-stats # the corpus numbers
+pixi run clean-sessions # prune the old session profiles
 ```
 
-App runs at **http://localhost:8668**
-
-## Project Structure
+## The project layout
 
 ```
-├── plans/           # Technical planning documents
-├── didactic/        # Educational methodology docs
-├── www/             # Static pages (GitHub Pages)
-├── docker/          # Unified Docker setup
+├── plans/            # the design notes, this is where you are
+├── docs/             # the site, it is the GitHub Pages root
+│   ├── lab/          # the lab pages
+│   └── assets/       # the images and the video
+├── docker/           # the compose stack, everything is prlx- prefixed
 │   ├── docker-compose.yml
 │   ├── Dockerfile.app
 │   ├── up.sh
 │   ├── down.sh
 │   ├── status.sh
 │   └── tests.sh
-└── src/             # Python backend
+├── config/           # the model catalogue, the router presets, the viking config
+├── facts/            # the corpus, it is not in git
+├── scripts/          # the corpus builders and the checks
+├── src/              # the Python backend
+└── src/gui/          # the interface
 ```
 
-### Key Planning Documents
+## The documents
 
-- [models.md](models.md) - LLM/VLM models (Ollama)
-- [embeddings.md](embeddings.md) - Embedding model setup
-- [docker.md](docker.md) - Docker architecture and containers
-- [observability.md](observability.md) - Phoenix + OpenTelemetry setup
-- [monitor.md](monitor.md) - GPU/CUDA monitoring and performance
-- [gui.md](gui.md) - Terminal-style web interface and chat modes
-- [agentic.md](agentic.md) - Multi-agent debate system and context management
-- [memory.md](memory.md) - OpenViking memory system
-- [dataset.md](dataset.md) - Knowledge sources
-- [info-pages.md](info-pages.md) - xPAI parody content
+| Document | What is in it |
+|---|---|
+| [open-goals.md](open-goals.md) | the work list, read it first |
+| [bdd-app.md](bdd-app.md) | the scenarios the app has to keep passing |
+| [agent-framework.md](agent-framework.md) | the agents, the strategies, the context |
+| [tooling-upgrade.md](tooling-upgrade.md) | how the stack got to where it is |
+| [enrichment.md](enrichment.md) | the ammunition tier and how it is built |
+| [sources.md](sources.md) | where the corpus comes from |
+| [models.md](models.md) | the models, the catalogue, how to add one |
+| [embeddings.md](embeddings.md) | the encoder and the image tier |
+| [docker.md](docker.md) | the four services and what they do |
+| [dev.md](dev.md) | the environments, the tasks, the native fallback |
+| [huggingface.md](huggingface.md) | the model files and where they come from |
 
-## Language Support
+## The disclaimer
 
-Current: English [EN]  
-Planned: Multi-language support
+This is an educational and research muLAB. Some of the content is for fun, and
+some of it may be under copyright, including the translations. Nothing here is
+meant to actually convince anyone of any Earth shape theory.
 
----
+*GenAI always hallucinates. Or at least it tries to persuade you.*
 
-⚠️ **Disclaimer**: This is an educational/research µLAB. Some content is for FUN and may be subject to copyright (including unique translations). Not intended to actually convince anyone of any Earth shape theory.
+## Language
 
-*GenAI ALWAYS hallucinates. Or at least tries to persuade you. 😄*
-
-## TODO / Roadmap
-
-- [x] BDD testing: Model benchmarks completed
-- [x] Select models based on benchmarks (Granite + Qwen3-VL)
-- [ ] OpenViking runtime: Inter-agent communication
-- [ ] User feature: Add new facts to knowledge base
-- [ ] User feature: Personal memory (facts accepted/rejected)
-- [ ] Multi-language support
-- [ ] Mobile-responsive UI
+Current: English. Planned: more.

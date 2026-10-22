@@ -1,371 +1,171 @@
-# Models: LLM, VLM, and Embeddings
+# Models: the chat model, the encoder, and the catalogue
 
-> AI models for parallax.observer - Ollama for LLM/VLM, Infinity for embeddings
+> The models parallax.observer runs, and the four steps to add one.
 
-## Overview
+## How the models are served
 
-parallax.observer uses **Ollama** for all LLM/VLM inference and **Infinity** for embeddings.
+One llama.cpp server, in router mode, serves everything. The model id in the
+request body decides which model answers, so the chat model and the encoder
+share a port and a CUDA context.
 
-| Component | Technology | Port | Purpose |
-|-----------|------------|------|---------|
-| LLM/VLM Inference | Ollama (Docker) | 11433 | Text generation, vision chat |
-| Text Embeddings | Infinity (Docker) | 7997 | Semantic search, RAG |
-| Image Embeddings | Infinity (Docker) | 7997 | Image search, CLIP-style |
+| From the host | From inside the network | What |
+|---|---|---|
+| `http://localhost:11433/v1` | `http://prlx-llm:8080/v1` | the router |
 
----
+The router reads its presets from `config/llama-models.ini`. The name of a
+section is the model id the router routes on, so a request has to carry
+`"model": "granite-4.0-h-tiny"` and it lands on the right one.
 
-## Tested Models
-
-### LLM/VLM Models (Ollama, Q4_K_M Quantization)
-
-| Model | Type | Size | Load | Throughput | Latency | Use Case |
-|-------|------|------|------|------------|---------|----------|
-| **granite3.3:2b** | Reasoning | 1.5 GB | 1.4s | **154.7 tok/s** | 1332ms | Fast reasoning, thinking mode |
-| **granite4:tiny-h** | MoE | 4.0 GB | 2.6s | 124.8 tok/s | 1113ms | Long context (128K), multilingual |
-| **granite4:micro-h** | Hybrid | 2.0 GB | 1.8s | 107.6 tok/s | 1451ms | Lightweight, fast loading |
-| **qwen3-vl:2b** | Vision | 1.9 GB | ~3s | ~40 tok/s | ~6s | Image analysis, OCR |
-
-### Embedding Models (Infinity)
-
-| Model | Type | Dimensions | Use Case |
-|-------|------|------------|----------|
-| **nomic-ai/modernbert-embed-base** | Text | 768 | Semantic search, RAG |
-| **google/siglip-so400m-patch14-384** | Image | 384 | Image search, text-image matching |
-
-### Model Details
-
-#### Granite 3.3 2B (Reasoning)
-
-| Property | Value |
-|----------|-------|
-| Ollama Tag | `granite3.3:2b` |
-| Parameters | 2.5B |
-| Context | 128K tokens |
-| Quantization | Q4_K_M |
-| License | Apache 2.0 |
-
-**Thinking Mode:**
 ```bash
-curl -X POST http://localhost:11433/v1/chat/completions \
+# what the router serves
+curl -s http://localhost:11433/v1/models | jq -r '.data[].id'
+
+# a chat turn
+curl -s http://localhost:11433/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{
-    "model": "granite3.3:2b",
-    "messages": [
-      {"role": "control", "content": "thinking"},
-      {"role": "user", "content": "Prove the Earth is round using physics."}
-    ]
-  }'
+  -d '{"model": "granite-4.0-h-tiny",
+       "messages": [{"role": "user", "content": "Prove the Earth is round."}]}'
+
+# a vector
+curl -s http://localhost:11433/v1/embeddings \
+  -H "Content-Type: application/json" \
+  -d '{"model": "embeddinggemma-2", "input": "probe string"}'
 ```
 
-#### Granite 4.0 Tiny-H (MoE)
+The image is `ghcr.io/ggml-org/llama.cpp:server-cuda13`. The tag moves, so
+the build number matters: the `gemma-embedding2` architecture that
+EmbeddingGemma 2 needs landed in build 11455, and the `server-cuda-b4738`
+line has the router removed. A pull of an older build answers
+`unknown model architecture` and it looks like a broken model file.
 
-| Property | Value |
-|----------|-------|
-| Ollama Tag | `granite4:tiny-h` |
-| Total Parameters | 6.9B |
-| Active Parameters | ~1B (MoE) |
-| Context | 128K tokens |
-| Quantization | Q4_K_M |
-| License | Apache 2.0 |
+## The models we run
 
-Mixture-of-Experts architecture - only 1B params active per inference for memory efficiency.
+| Model | Role | File | Quant | Size | Note |
+|---|---|---|---|---|---|
+| granite-4.0-h-tiny | chat | `granite-4.0-h-tiny-Q4_K_M.gguf` | Q4_K_M | 4231 MB | hybrid MoE, 128K context, thinking on |
+| embeddinggemma-2 | embedding | `embeddinggemma-2-Q8_0.gguf` | Q8_0 | 310 MB | 768 dimensions, multimodal |
 
-#### Granite 4.0 Micro-H (Hybrid Mamba-2)
+The chat model has thinking on. The reasoning trace comes back in the
+`reasoning_content` field and the answer comes back in `content`, so the
+interface can show the thinking separately or not at all.
 
-| Property | Value |
-|----------|-------|
-| Ollama Tag | `granite4:micro-h` |
-| Parameters | 3.2B |
-| Context | 128K tokens |
-| Quantization | Q4_K_M |
-| License | Apache 2.0 |
+The encoder needs its vision projector next to it,
+`mmproj-embeddinggemma-2-Q8_0.gguf`. Without it the image tier does not
+work, and with it the encoder still only answers with text vectors.
 
-Hybrid architecture with Mamba-2 layers for efficient long-context handling.
+## The catalogue
 
-#### Qwen3-VL 2B (Vision-Language)
+`config/models.toml` is the catalogue. It is one section per model, and the
+name of the section is the model id.
 
-| Property | Value |
-|----------|-------|
-| Ollama Tag | `qwen3-vl:2b` |
-| Parameters | 2B |
-| Context | 32K tokens |
-| Capabilities | Image understanding, OCR |
+```toml
+default = "granite-4.0-h-tiny"
 
-**Vision Test Results:**
-- Correctly reads text from images
-- Identifies objects, symbols, colors
-- Describes visual composition
-
----
-
-## Ollama Infrastructure
-
-### Docker Setup
-
-Location: `docker/`
-
-```yaml
-# docker/docker-compose.yml
-services:
-  parallax-ollama:
-    image: ollama/ollama:latest
-    ports:
-      - "11433:11434"
-    environment:
-      OLLAMA_FLASH_ATTENTION: 1
-      OLLAMA_KV_CACHE_TYPE: q8_0
-      OLLAMA_CONTEXT_LENGTH: 128000
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+["granite-4.0-h-tiny"]
+file = "granite-4.0-h-tiny-Q4_K_M.gguf"
+role = "chat"
+reasoning = true
+quant = "Q4_K_M"
+size_mb = 4231
+display = "Granite 4.0 H Tiny"
+note = "Hybrid MoE, thinking mode. The default."
 ```
 
-### Start Ollama
+The section names are quoted. A bare key with a dot in it reads as a nested
+table in TOML, and `granite-4.0-h-tiny` without the quotes becomes a table
+called `granite-4`.
 
-```bash
-# Start everything (includes Ollama)
-docker/up.sh
+The `role` field separates the chat models from the encoders, so the app can
+build the right set of clients out of one file. Only the chat models show up
+in the picker.
 
-# Or start just Ollama
-docker/up.sh ollama
-```
+## The per session model
 
-### Pull Models
-
-```bash
-# Text models (Q4_K_M from Ollama library)
-ollama pull granite4:micro-h
-ollama pull granite4:tiny-h
-ollama pull granite3.3:2b
-
-# Vision model
-ollama pull qwen3-vl:2b
-```
-
-### API Usage
-
-**Generate:**
-```bash
-curl http://localhost:11433/api/generate -d '{
-  "model": "granite3.3:2b",
-  "prompt": "Why is the Earth round?",
-  "stream": false
-}'
-```
-
-**Chat:**
-```bash
-curl http://localhost:11433/api/chat -d '{
-  "model": "granite3.3:2b",
-  "messages": [{"role": "user", "content": "Hello!"}]
-}'
-```
-
-**Vision (with image):**
-```python
-import base64
-import requests
-
-with open("image.jpg", "rb") as f:
-    image_b64 = base64.b64encode(f.read()).decode()
-
-response = requests.post("http://localhost:11433/api/generate", json={
-    "model": "qwen3-vl:2b",
-    "prompt": "What do you see in this image?",
-    "images": [image_b64],
-    "stream": False,
-})
-print(response.json()["response"])
-```
-
-### Model Management
-
-```bash
-# List models
-curl http://localhost:11433/api/tags
-
-# Unload model from GPU
-curl http://localhost:11433/api/generate -d '{
-  "model": "granite3.3:2b",
-  "keep_alive": 0
-}'
-
-# Delete model
-ollama rm granite3.3:2b
-```
-
----
-
-## Embeddings
-
-See [plans/embeddings.md](embeddings.md) for full documentation.
-
-### Quick Reference
-
-| Property | Value |
-|----------|-------|
-| Model | `nomic-ai/modernbert-embed-base` |
-| Dimensions | 768 (supports Matryoshka: 256, 512) |
-| Context | 8192 tokens |
-| License | Apache 2.0 |
-
-### Usage (via Infinity API)
-
-```python
-import httpx
-
-INFINITY_URL = "http://localhost:7997/v1/embeddings"
-TEXT_MODEL = "nomic-ai/modernbert-embed-base"
-
-def get_embedding(text: str, dimension: int | None = None) -> list[float]:
-    payload = {"model": TEXT_MODEL, "input": text}
-    if dimension:
-        payload["dimensions"] = dimension
-    response = httpx.post(INFINITY_URL, json=payload)
-    return response.json()["data"][0]["embedding"]
-
-# Query
-query_embedding = get_embedding("search_query: Why is the earth flat?")
-
-# Document
-doc_embedding = get_embedding("search_document: Water always finds its level.")
-
-# With dimension truncation
-embedding_256 = get_embedding("search_query: text", dimension=256)
-```
-
----
-
-## Configuration
-
-### Environment Variables
-
-```bash
-# Ollama
-OLLAMA_HOST=http://localhost:11433
-
-# Embeddings
-EMBEDDING_MODEL=nomic-ai/modernbert-embed-base
-EMBEDDING_DIMENSION=768
-```
-
-### Project Config
-
-```yaml
-# config/models.yaml
-
-inference:
-  engine: ollama
-  host: http://localhost:11433
-  default_model: granite3.3:2b
-
-models:
-  granite3.3:2b:
-    type: reasoning
-    context: 128000
-    thinking_mode: true
-    
-  granite4:tiny-h:
-    type: moe
-    context: 128000
-    
-  granite4:micro-h:
-    type: hybrid
-    context: 128000
-    
-  qwen3-vl:2b:
-    type: vlm
-    context: 32000
-
-embeddings:
-  model: nomic-ai/modernbert-embed-base
-  dimension: 768
-```
-
----
-
-## Architecture
+The model is a property of the session, not a global setting. That is what
+makes an A/B possible, and it is what a coding agent needs to load a model and
+watch it argue.
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     parallax.observer                       │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │              Ollama (Docker)                          │  │
-│  │              Port: 11433                              │  │
-│  │                                                       │  │
-│  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐    │  │
-│  │  │ granite3.3  │ │ granite4    │ │ qwen3-vl    │    │  │
-│  │  │ :2b         │ │ :tiny-h     │ │ :2b         │    │  │
-│  │  │ Reasoning   │ │ MoE, 128K   │ │ Vision      │    │  │
-│  │  └─────────────┘ └─────────────┘ └─────────────┘    │  │
-│  │                                                       │  │
-│  │  Flash Attention: ON | KV Cache: q8_0               │  │
-│  └───────────────────────────────────────────────────────┘  │
-│                                                             │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │              Embeddings                               │  │
-│  │              nomic-ai/modernbert-embed-base           │  │
-│  │              768 dimensions | 8K context              │  │
-│  └───────────────────────────────────────────────────────┘  │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+src/config.py     catalogue_models(), chat_models(), default_model()
+src/session.py    Session.model, and SessionStore.create(model=...)
+src/main.py       ModelClients, one LLMClient per model id, made on first use
+src/gui/          the picker on the setup form
 ```
 
----
+The HTTP surface:
 
-## Benchmark Files
+| Endpoint | What it does |
+|---|---|
+| `GET /api/models` | the catalogue, the picker is filled from it |
+| `POST /api/session` | takes a `model`, a model the catalogue does not know falls back to the default |
+| `GET /api/status` | the models that have a client loaded |
 
-- `investigations/ollama/benchmark.py` - Performance benchmark script
-- `investigations/benchmark_ollama_results.json` - Full benchmark results
-- `investigations/ollama/test_vlm.py` - Vision model test script
+The orchestrator is made per model, and the Fire Chat gets the model of the
+session that started it, so the moderator scores with the same model that
+argued.
 
----
+## The four steps to add a model
 
-## Wisdom Extraction Pipeline Models
+This is the whole extension point, and it is what a coding agent needs to
+"find a model, load the model, defend the model".
 
-The wisdom extraction pipeline (`scripts/expand_enrichment.py`) uses a simplified 2-model strategy:
+1. Drop the GGUF into `.models/llama/`.
+2. Add a `[section]` to `config/llama-models.ini`. The section name is the
+   model id the router routes on.
+3. Add an entry to `config/models.toml`.
+4. Restart the router and the app.
 
-| Task | Model | Type | VRAM | Purpose |
-|------|-------|------|------|---------|
-| **L0 Essence** | `granite4:tiny-h` | MoE | 5.6 GB | Fast summarization |
-| **L1 Insight** | `granite4:tiny-h` | MoE | (shared) | Context, hooks, arguments |
-| **L2 Depth** | `granite3.3:2b` | Thinking | 1.5 GB | Rich "fabulous" origin stories |
+No code changes. The app reads the catalogue at startup and makes a client
+per model id on first use.
 
-**Total VRAM:** ~7.1 GB when both models loaded
+The check that keeps the three in step is in `pixi run verify`: every chat
+model in the catalogue has to have a preset section and a file in
+`.models/llama/`, or the verify fails.
 
-### Model Selection Rationale
+## The two dialects
 
-- **granite4:tiny-h for L0/L1**: MoE architecture provides excellent throughput while sharing the same model reduces memory overhead
-- **granite3.3:2b for L2**: Thinking/reasoning model produces the engaging narrative content
+The router speaks the OpenAI dialect on `/v1`. The app speaks it too, through
+`httpx2` in `src/llm.py`, and the streaming path reads the server sent events
+by hand.
 
-### Model Management
+The dialect that matters is the one OpenViking speaks. The memory server
+calls the encoder with an OpenAI shaped request and its own base url, which
+is why `VIKING_EMBEDDING_BASE` points at the router in the compose file. The
+app never embeds anything itself, the memory server does, and the app only
+retrieves.
 
-The pipeline automatically:
-1. Preloads required models at startup
-2. Unloads unused models (e.g., granite4:micro-h)
-3. Monitors VRAM via Ollama `/api/ps` endpoint
+## The guardrails goal
 
-```bash
-# Check loaded models
-curl -s http://localhost:11433/api/ps | jq '.models[].name'
+There is a goal in `plans/open-goals.md` about running the same corpus
+against a model whose safety training has been stripped, to show that
+persuasion is a property of the setup and not of the model.
 
-# Manual unload
-curl -X POST http://localhost:11433/api/generate -d '{
-  "model": "granite4:micro-h",
-  "keep_alive": 0
-}'
-```
+It is written and not built, and the reason is in the goal itself: the way
+the guardrails come off is different for every model, so there is no recipe
+to build once and reuse.
 
----
+The model layer is what that goal needs. The catalogue is where the
+uncensored build goes, the per session model is how the two runs stay
+separate, and the argument ledger in the session is what the comparison reads.
 
-## Related Files
+## The corpus pipeline models
 
-- [plans/embeddings.md](embeddings.md) - Embedding model documentation
-- [plans/memory.md](memory.md) - OpenViking memory system
-- [docker/](../docker/) - Docker configuration
+The corpus builders (`scripts/chunk_knowledge.py` and
+`scripts/expand_enrichment.py`) talk to the same router, so they use the
+chat model and nothing else. The pipeline used to run four models, one per
+stage, and unload the ones it did not need. The router made that
+unnecessary, and the GPU guardrails that came with it are still there, the
+temperature pause at 80 degrees and the VRAM warning at 90 percent, along
+with the per wisdom checkpoint and the resume.
+
+## The files
+
+| File | What it is |
+|---|---|
+| `config/models.toml` | the catalogue |
+| `config/llama-models.ini` | the router presets |
+| `.models/llama/` | the GGUF files, they are not in git |
+| `src/config.py` | reading the catalogue |
+| `src/llm.py` | the client, it takes the model in the constructor |
+| `src/main.py` | the clients per model id |
+| `docker/fetch-models.sh` | the downloads |

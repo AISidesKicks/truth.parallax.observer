@@ -1,454 +1,175 @@
-# Docker Architecture
+# Docker: the prlx- stack
 
-> Unified Docker setup for parallax.observer
+> Four services, one network, everything with a prefix.
 
-## Overview
-
-parallax.observer runs as a set of Docker containers with a unified network. All Docker configuration is consolidated in the `docker/` directory.
+## The stack
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         parallax-lab Network                                 │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐            │
-│  │ parallax-ollama │  │parallax-infinity│  │ parallax-phoenix│            │
-│  │                 │  │                 │  │                 │            │
-│  │ Port: 11433     │  │ Port: 7997      │  │ Port: 6006      │            │
-│  │                 │  │                 │  │ Port: 4317/4318 │            │
-│  │ granite3.3:2b   │  │ modernbert-embed│  │ Phoenix UI      │            │
-│  │ granite4:tiny-h │  │ siglip (images) │  │ OTLP Receiver   │            │
-│  │ granite4:micro-h│  │                 │  │                 │            │
-│  │ qwen3-vl:2b     │  │                 │  │                 │            │
-│  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘            │
-│           │                    │                    │                      │
-│           │                    │                    │                      │
-│           ▼                    ▼                    ▼                      │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                       parallax-app / parallax-dev                   │   │
-│  │  FastAPI App | OpenViking | Ollama client | Infinity client        │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│                            prlx-lab                                  │
+│                                                                       │
+│  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐          │
+│  │    prlx-llm    │  │  prlx-viking   │  │  prlx-phoenix  │          │
+│  │                │  │                │  │                │          │
+│  │ 11433 -> 8080  │  │ 1933           │  │ 6006, 4317/18  │          │
+│  │ llama.cpp      │  │ OpenViking     │  │ Phoenix        │          │
+│  │ router mode    │  │ 0.5.1.1        │  │ the traces     │          │
+│  │                │  │                │  │                │          │
+│  │ granite-4.0-   │  │ the corpus     │  └────────────────┘          │
+│  │ h-tiny         │  │ the vectors    │                              │
+│  │ embeddinggemma-│  │                │                              │
+│  │ 2              │  └───────┬────────┘                              │
+│  └───────┬────────┘          │                                       │
+│          │                   │                                       │
+│          └─────────┬─────────┘                                       │
+│                    │                                                 │
+│          ┌─────────▼─────────┐                                       │
+│          │     prlx-app      │                                       │
+│          │                   │                                       │
+│          │ 8668              │                                       │
+│          │ FastAPI, the      │                                       │
+│          │ interface, the    │                                       │
+│          │ agents            │                                       │
+│          └───────────────────┘                                       │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
----
+There is a fifth service, `prlx-embed`. It is a standalone embedding server
+and it is optional, it only exists for the case where the encoder wants a
+CUDA context of its own. The default stack does not start it.
 
-## Directory Structure
+## The services
 
-```
-docker/
-├── docker-compose.yml    # Unified compose with profiles
-├── Dockerfile.app        # App container image
-├── up.sh                 # Unified startup script
-├── down.sh               # Stop all containers
-├── status.sh             # Container status check
-├── tests.sh              # Test script
-└── README.md             # Quick reference
-```
+| Container | Image | Profile | Port | GPU | What |
+|---|---|---|---|---|---|
+| `prlx-llm` | `ghcr.io/ggml-org/llama.cpp:server-cuda13` | llm | 11433 | yes | the router, the chat model and the encoder |
+| `prlx-embed` | `ghcr.io/ggml-org/llama.cpp:server-cuda13` | embed | 7997 | yes | the encoder on its own, optional |
+| `prlx-viking` | the OpenViking image | viking | 1933 | no | the memory server, the corpus, the vectors |
+| `prlx-phoenix` | `arizephoenix/phoenix:latest` | phoenix | 6006, 4317, 4318 | no | the traces, with the token counts |
+| `prlx-app` | built from `docker/Dockerfile.app` | app | 8668 | no | the interface |
+| `prlx-dev` | built from `docker/Dockerfile.app` | dev | 8668 | yes | the same, with hot reload and debug logging |
 
----
+Everything carries the `prlx-` prefix: the containers, the network, the
+volume. This Docker host is shared with other projects, and an unprefixed
+container name is a collision waiting for a bad afternoon.
 
-## Quick Start
+## Running it
 
 ```bash
-# Default (production with observability)
-docker/up.sh
+cd docker
 
-# Development (hot reload)
-docker/up.sh dev
+./fetch-models.sh   # the GGUF files, they live on the host
+./up.sh             # llm + viking + phoenix + app
+./up.sh dev         # llm + viking + phoenix + dev
+./up.sh llm viking  # a chosen combination
+./status.sh
+./tests.sh
+./down.sh
+```
 
-# Individual services
-docker/up.sh ollama
-docker/up.sh ollama infinity
+The app is at **http://localhost:8668**, the model server at
+**http://localhost:11433/v1**, the memory server at
+**http://localhost:1933**, and the traces at **http://localhost:6006**.
 
-# Run tests
+## The env file, and where it is read from
+
+This is the part that bites.
+
+The scripts run compose from inside `docker/`, so compose reads its
+interpolation variables from `docker/.env`, which does not exist. The
+scripts pass `--env-file ../.env` explicitly, and that flag is what makes
+the interpolation work. It has to stay.
+
+There are two different things going on, and they are easy to mix up:
+
+| | What it does | Where it comes from |
+|---|---|---|
+| `env_file: ../.env` | the variables the container sees | the root `.env` |
+| `--env-file ../.env` | the variables compose interpolates `${...}` with | the root `.env` |
+
+So the compose file can write `${LLM_MODEL_ALIAS:-granite-4.0-h-tiny}` and it
+resolves against the root `.env`, and the container also receives the root
+`.env` as its environment.
+
+`environment:` beats `env_file:` for the same variable, so the container side
+values win where both are set. That is how `OPENVIKING_WORKSPACE` becomes
+`/app/viking_data` inside the container while the root `.env` holds the host
+path `memory/openviking`.
+
+**Do not drop the `--env-file ../.env` flag.** Without it the app container
+gets the root API key instead of the user key, and every corpus read comes
+back 403. The stack looks fine, the model answers, and the retrieval is
+empty.
+
+## The two OpenViking keys
+
+There are two keys and they are not interchangeable.
+
+| Key | What it can do |
+|---|---|
+| the root key | reindex, administer |
+| the user key | read the tenant data, which is where the corpus lives |
+
+The corpus is in the **user** namespace. The root key can reindex it and
+cannot read it.
+
+## The volumes
+
+| Host | Container | What |
+|---|---|---|
+| `.models/llama` | `/models` | the GGUF files, read only |
+| `config/llama-models.ini` | `/app/models.ini` | the router presets, read only |
+| `memory/openviking` | `/app/viking_data` | the memory workspace |
+| `facts` | `/app/facts` | the corpus, read only in the app |
+| `config` | `/app/config` | the catalogue and the viking config, read only |
+| `.logs/app` | `/app/logs` | the app logs |
+| `prlx-phoenix-data` | `/root/.phoenix` | the traces |
+
+The memory workspace is big. The corpus is 79 MB, the vectors are 90 MB, and
+the server internals are another 18 MB.
+
+## The GPU
+
+Three containers ask for the card: `prlx-llm`, `prlx-embed` and `prlx-dev`.
+`prlx-app` does not need it, it only reads the metrics, and `nvidia-ml-py`
+reads the driver directly without a CUDA context, so the monitoring bar gets
+the GPU numbers without taking any of the card's memory.
+
+The `prlx-embed` service is the one to think about. It is another CUDA
+context on a card that already holds the chat model, and the chat model is
+the one that has to stay responsive.
+
+### When the driver breaks
+
+It happened once: the host had kernel module 615.71.09 and the userspace
+libraries were 615.71.10, and the container could not open the card. A
+reboot fixed it, because the kernel and the libraries have to match.
+
+The fallback is the native path, `pixi run -e native`, which runs llama.cpp
+on the host without the container. See `plans/dev.md`.
+
+## The checks
+
+```bash
 docker/tests.sh
-
-# Check status
-docker/status.sh
-
-# Stop all
-docker/down.sh
 ```
 
----
-
-## Services
-
-| Container | Image | Profile | Ports | GPU | Purpose |
-|-----------|-------|---------|-------|-----|---------|
-| `parallax-ollama` | `ollama/ollama:latest` | ollama | 11433:11434 | ✅ | LLM/VLM inference |
-| `parallax-infinity` | `michaelf34/infinity:latest` | infinity | 7997:7997 | ✅ | Text & image embeddings |
-| `parallax-phoenix` | `arizephoenix/phoenix:latest` | phoenix | 6006, 4317, 4318 | ❌ | Observability (tracing) |
-| `parallax-app` | custom | app | 8668:8668 | ❌ | Production application |
-| `parallax-dev` | custom | dev | 8668:8668 | ✅ | Development with GPU monitoring |
-
----
-
-## Startup Modes
-
-### Default (No Arguments)
-
-```bash
-docker/up.sh
-```
-
-Starts: ollama + infinity + phoenix + app
-
-### Development
-
-```bash
-docker/up.sh dev
-```
-
-Starts: ollama + infinity + phoenix + dev (hot reload, debug logging)
-
-### Individual Services
-
-```bash
-docker/up.sh ollama       # Just Ollama
-docker/up.sh infinity     # Just Infinity
-docker/up.sh phoenix      # Just Phoenix
-docker/up.sh ollama infinity app  # Custom combination
-```
-
----
-
-## Network
-
-All containers share the **parallax-lab** network for inter-container communication.
-
-```bash
-# Create network (automatic via up.sh)
-docker network create parallax-lab
-
-# Verify network
-docker network ls | grep parallax
-```
-
----
-
-## Volumes
-
-| Volume | Container | Purpose |
-|--------|-----------|---------|
-| `.models/ollama` | ollama | GGUF models (persisted) |
-| `.models/infinity` | infinity | Embedding models (persisted) |
-| `memory/viking` | app, dev | OpenViking memory storage |
-| `facts` | app, dev | Knowledge base files |
-| `.logs` | app, dev | Application logs |
-| `phoenix_data` | phoenix | Phoenix trace storage |
-
----
-
-## Startup Order
-
-Services start with proper dependency ordering:
-
-1. **parallax-ollama** (waits for health check)
-2. **parallax-infinity** (waits for startup)
-3. **parallax-phoenix** (independent)
-4. **parallax-app** / **parallax-dev** (waits for ollama + infinity)
-
-```bash
-# Just run locally without Docker
-./dev.sh
-```
-
----
-
-## Common Commands
-
-### Container Management
-
-```bash
-# List running containers
-docker ps
-
-# List all containers (including stopped)
-docker ps -a
-
-# Stop all parallax containers
-docker/down.sh
-
-# Stop specific container
-docker stop parallax-ollama parallax-app
-```
-
-### Logs
-
-```bash
-# Ollama logs
-docker logs -f parallax-ollama
-
-# App logs
-docker logs -f parallax-app
-
-# Phoenix logs
-docker logs -f parallax-phoenix
-
-# Infinity logs
-docker logs -f parallax-infinity
-```
-
-### Shell Access
-
-```bash
-# Shell into Ollama
-docker exec -it parallax-ollama bash
-
-# Shell into app
-docker exec -it parallax-app bash
-
-# Pull new model in Ollama
-docker exec parallax-ollama ollama pull <model>
-```
-
----
-
-## GPU Configuration
-
-### GPU-Enabled Containers
-
-Three containers have GPU access via NVIDIA runtime:
-
-| Container | GPU Access | Purpose |
-|-----------|------------|---------|
-| `parallax-ollama` | ✅ Full | LLM/VLM inference on GPU |
-| `parallax-infinity` | ✅ Full | Embedding computation on GPU |
-| `parallax-dev` | ✅ Full | GPU monitoring with `nvidia-ml-py` |
-| `parallax-app` | ❌ No | Production app (CPU only) |
-| `parallax-phoenix` | ❌ No | Observability (CPU only) |
-
-### GPU Configuration in docker-compose.yml
-
-```yaml
-deploy:
-  resources:
-    reservations:
-      devices:
-        - driver: nvidia
-          count: 1
-          capabilities: [gpu]
-```
-
-### GPU Environment Variables (dev container)
-
-```yaml
-environment:
-  - NVIDIA_VISIBLE_DEVICES=all
-  - NVIDIA_DRIVER_CAPABILITIES=compute,utility
-```
-
-### GPU Monitoring in Dev Container
-
-The `parallax-dev` container can use `nvidia-ml-py` for GPU monitoring:
-
-```python
-import nvidia_smi
-
-nvidia_smi.nvmlInit()
-handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
-
-# Get GPU stats
-mem = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
-util = nvidia_smi.nvmlDeviceGetUtilizationRates(handle)
-temp = nvidia_smi.nvmlDeviceGetTemperature(handle, nvidia_smi.NVML_TEMPERATURE_GPU)
-
-print(f"GPU Temp: {temp}°C")
-print(f"VRAM: {mem.used // 1024**3}GB / {mem.total // 1024**3}GB")
-print(f"GPU Util: {util.gpu}%")
-```
-
-### Prerequisites
-
-**Host System:**
-1. NVIDIA GPU drivers installed
-2. NVIDIA Container Toolkit installed
-
-```bash
-# Install NVIDIA Container Toolkit (Ubuntu/Debian)
-curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
-curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
-  sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
-  sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
-sudo apt-get update
-sudo apt-get install -y nvidia-container-toolkit
-sudo nvidia-ctk runtime configure --runtime=docker
-sudo systemctl restart docker
-```
-
-### GPU Debugging
-
-```bash
-# Check GPU access in container
-docker exec parallax-ollama nvidia-smi
-
-# Check Ollama GPU usage
-docker exec parallax-ollama ollama ps
-```
-
----
-
-## Environment Variables
-
-### Ollama
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `OLLAMA_FLASH_ATTENTION` | 1 | Enable flash attention |
-| `OLLAMA_KV_CACHE_TYPE` | q8_0 | 8-bit KV cache |
-| `OLLAMA_CONTEXT_LENGTH` | 128000 | Max context length |
-
-### Application
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `OLLAMA_HOST` | http://parallax-ollama:11434 | Ollama endpoint |
-| `EMBEDDING_MODEL` | nomic-ai/modernbert-embed-base | Embedding model |
-| `EMBEDDING_DIMENSION` | 768 | Embedding dimensions |
-| `LOG_LEVEL` | INFO | Logging level |
-| `DEBUG` | false | Debug mode |
-| `PHOENIX_ENABLED` | false | Enable OpenTelemetry |
-
-### Phoenix
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PHOENIX_HOST` | 0.0.0.0 | Bind address |
-| `PHOENIX_PORT` | 6006 | UI port |
-
----
-
-## Architecture Details
-
-### Ollama Container
-
-```yaml
-services:
-  parallax-ollama:
-    image: ollama/ollama:latest
-    ports:
-      - "11433:11434"
-    volumes:
-      - ../.models/ollama:/root/.ollama
-    environment:
-      OLLAMA_FLASH_ATTENTION: 1
-      OLLAMA_KV_CACHE_TYPE: q8_0
-      OLLAMA_CONTEXT_LENGTH: 128000
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-```
-
-### Application Container
-
-```yaml
-services:
-  parallax-app:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.app
-    ports:
-      - "8668:8668"
-    volumes:
-      - ../memory/viking:/app/viking_data
-      - ../facts:/app/facts
-      - ../.logs:/app/logs
-    environment:
-      - OLLAMA_HOST=http://parallax-ollama:11434
-```
-
-### Development Container (with GPU)
-
-```yaml
-services:
-  parallax-dev:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.app
-    ports:
-      - "8668:8668"
-    volumes:
-      - ../src:/app/src
-      - ../models:/app/models
-      - ../.env:/app/.env:ro
-    environment:
-      - OLLAMA_HOST=http://parallax-ollama:11434
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
-      - DEBUG=true
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-```
-
-### Phoenix Container
-
-```yaml
-services:
-  parallax-phoenix:
-    image: arizephoenix/phoenix:latest
-    ports:
-      - "6006:6006"
-      - "4317:4317"
-      - "4318:4318"
-```
-
----
-
-## Quick Reference
-
-### Start Everything
-
-```bash
-# Production (default)
-docker/up.sh
-
-# Development
-docker/up.sh dev
-```
-
-### Stop Everything
-
-```bash
-docker/down.sh
-```
-
-### Check Status
-
-```bash
-docker/status.sh
-```
-
-### Full Reset
-
-```bash
-# Stop and remove all
-docker/down.sh
-docker rm parallax-ollama parallax-app parallax-dev parallax-phoenix parallax-infinity 2>/dev/null || true
-
-# Remove volumes (optional - clears data)
-docker volume rm phoenix_data 2>/dev/null || true
-
-# Restart
-docker/up.sh
-```
-
----
-
-## Related Files
-
-- [plans/observability.md](observability.md) - Phoenix + OpenTelemetry
-- [plans/models.md](models.md) - Model configuration
-- [plans/dev.md](dev.md) - Development workflow
-- [docker/docker-compose.yml](../docker/docker-compose.yml) - Main compose file
+It asks the model server what it serves, asks the memory server for its
+health, and then runs `scripts/verify_stack.py`, which is the real check.
+The eight checks are in `plans/open-goals.md` and in the script.
+
+## The files
+
+| File | What it is |
+|---|---|
+| `docker/docker-compose.yml` | the stack |
+| `docker/Dockerfile.app` | the app image |
+| `docker/Dockerfile.viking` | the memory server image |
+| `docker/fetch-models.sh` | the GGUF downloads |
+| `docker/up.sh` | start |
+| `docker/down.sh` | stop |
+| `docker/status.sh` | what is up |
+| `docker/tests.sh` | the checks |
+| `config/llama-models.ini` | the router presets |
+| `config/models.toml` | the catalogue |
+| `config/openviking.conf` | the memory server config, `${VAR}` and the server expands it |
