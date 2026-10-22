@@ -2,15 +2,16 @@
 """
 Is the stack actually working?
 
-One command, seven checks, in order, and the first failure stops the run:
+One command, eight checks, in order, and the first failure stops the run:
 
     1. the model server answers and serves the chat model and the encoder
-    2. the encoder returns a vector of the right size for a probe string
-    3. the memory server answers
-    4. the corpus is on disk
-    5. the index knows the corpus
-    6. a scoped retrieval finds something
-    7. a retrieval in a worldview that does not exist finds nothing
+    2. the catalogue, the presets and the model files agree
+    3. the encoder returns a vector of the right size for a probe string
+    4. the memory server answers
+    5. the corpus is on disk
+    6. the index knows the corpus
+    7. a scoped retrieval finds something
+    8. a retrieval in a worldview that does not exist finds nothing
 
 The last one is the important one. Without it, a retrieval that quietly
 falls back to the whole corpus would look like a working stack.
@@ -42,6 +43,8 @@ GHOST_WORLDVIEW = "a-worldview-that-does-not-exist"
 # the project root, so the script works from any folder
 ROOT = Path(__file__).resolve().parent.parent
 CATALOGUE = ROOT / "config" / "models.toml"
+PRESETS = ROOT / "config" / "llama-models.ini"
+MODELS_DIR = ROOT / ".models" / "llama"
 
 
 class Failure(Exception):
@@ -55,33 +58,39 @@ def load_dotenv_if_there() -> None:
 
 def catalogue_models() -> tuple[list[str], list[str]]:
     """The chat models and the encoders, from the catalogue."""
-    chat: list[str] = []
-    embedding: list[str] = []
-
-    if not CATALOGUE.exists():
-        return chat, embedding
-
     try:
-        import tomllib
-    except ModuleNotFoundError:
-        return chat, embedding
+        sys.path.insert(0, str(ROOT))
+        from src.config import catalogue_models as entries_of
 
-    try:
-        with CATALOGUE.open("rb") as handle:
-            data = tomllib.load(handle)
+        chat = [entry.id for entry in entries_of() if entry.role != "embedding"]
+        embedding = [entry.id for entry in entries_of() if entry.role == "embedding"]
+        return chat, embedding
     except Exception:
-        return chat, embedding
+        return [], []
 
-    for name, entry in data.items():
-        if not isinstance(entry, dict):
-            continue
-        role = entry.get("role", "chat")
-        if role == "embedding":
-            embedding.append(name)
-        else:
-            chat.append(name)
 
-    return chat, embedding
+def catalogue_files() -> dict[str, str]:
+    """The file name of every model in the catalogue."""
+    try:
+        sys.path.insert(0, str(ROOT))
+        from src.config import catalogue_models as entries_of
+
+        return {entry.id: entry.file for entry in entries_of() if entry.file}
+    except Exception:
+        return {}
+
+
+def preset_sections() -> set[str]:
+    """The model ids the llama.cpp router has a preset for."""
+    if not PRESETS.exists():
+        return set()
+
+    sections: set[str] = set()
+    for line in PRESETS.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line.startswith("[") and line.endswith("]") and line != "[*]":
+            sections.add(line[1:-1].strip())
+    return sections
 
 
 def settings_models() -> tuple[str, str]:
@@ -136,6 +145,39 @@ def check_model_server(base_url: str, chat: list[str], embedding: list[str]) -> 
         raise Failure(f"the model server does not serve: {', '.join(missing)}")
 
     print(f"      serves {', '.join(sorted(served))}")
+
+
+def check_catalogue() -> None:
+    """The catalogue, the presets and the files agree.
+
+    The catalogue holds the file name, the preset holds the path, and the
+    router routes on the model id. When the three drift apart, the app
+    offers a model the router cannot serve.
+    """
+    chat, embedding = catalogue_models()
+    if not chat and not embedding:
+        raise Failure("the catalogue is empty or missing")
+
+    sections = preset_sections()
+    missing_sections = [name for name in [*chat, *embedding] if name not in sections]
+    if missing_sections:
+        raise Failure(
+            f"the catalogue has no preset section for: {', '.join(missing_sections)}"
+        )
+
+    files = catalogue_files()
+    if not MODELS_DIR.exists():
+        raise Failure(f"no model folder: {MODELS_DIR}")
+
+    missing_files = [
+        f"{name} ({file})"
+        for name, file in files.items()
+        if not (MODELS_DIR / file).exists()
+    ]
+    if missing_files:
+        raise Failure(f"the model files are missing: {', '.join(missing_files)}")
+
+    print(f"      {len(chat)} chat models, {len(embedding)} encoders, all of them in step")
 
 
 def check_embedding(base_url: str, model: str, dimension: int) -> None:
@@ -279,18 +321,28 @@ def main() -> int:
     args = parser.parse_args()
 
     chat, embedding = expected_models()
+    holder: dict[str, object] = {}
+
+    def the_client():
+        """The memory client, made when the first check needs it."""
+        if "client" not in holder:
+            holder["client"] = make_client(args.server)
+        return holder["client"]
 
     checks = [
         ("the model server answers", lambda: check_model_server(args.llm, chat, embedding)),
-        (
-            "the encoder answers",
-            lambda: check_embedding(args.llm, embedding[0], args.dimension),
-        ),
+        ("the catalogue and the presets agree", check_catalogue),
+        ("the encoder answers", lambda: check_embedding(args.llm, embedding[0], args.dimension)),
         ("the memory server answers", lambda: check_memory_server(args.server)),
         ("the corpus is on disk", lambda: check_corpus_on_disk(Path(args.facts))),
+        ("the index knows the corpus", lambda: check_index(the_client())),
+        ("a scoped retrieval finds something", lambda: check_scoped_retrieval(the_client())),
+        (
+            "a retrieval in a worldview that does not exist finds nothing",
+            lambda: check_scoped_to_nothing(the_client()),
+        ),
     ]
 
-    client = None
     try:
         for number, (title, run) in enumerate(checks, start=1):
             print(f"{number}. {title}")
@@ -301,39 +353,10 @@ def main() -> int:
                 print()
                 print(f"the stack is not working, check {number} failed")
                 return 1
-
-        print("5. the index knows the corpus")
-        try:
-            client = make_client(args.server)
-            check_index(client)
-        except Failure as exc:
-            print(f"      FAILED: {exc}")
-            print()
-            print("the stack is not working, check 5 failed")
-            return 1
-
-        print("6. a scoped retrieval finds something")
-        try:
-            check_scoped_retrieval(client)
-        except Failure as exc:
-            print(f"      FAILED: {exc}")
-            print()
-            print("the stack is not working, check 6 failed")
-            return 1
-
-        print("7. a retrieval in a worldview that does not exist finds nothing")
-        try:
-            check_scoped_to_nothing(client)
-        except Failure as exc:
-            print(f"      FAILED: {exc}")
-            print()
-            print("the stack is not working, check 7 failed")
-            return 1
-
     finally:
-        if client is not None:
+        if "client" in holder:
             with contextlib.suppress(Exception):
-                client.close()
+                holder["client"].close()
 
     print()
     print("the stack is working")

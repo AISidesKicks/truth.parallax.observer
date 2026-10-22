@@ -8,14 +8,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.config import chat_models, default_model, model_catalogue, read_catalogue
+from src.config import catalogue_models, chat_models, default_model, read_catalogue
 from src.main import pick_model
 from src.session import SessionStore
 
 
 def test_the_catalogue_lists_the_models() -> None:
     """Every model the router serves is in the catalogue."""
-    entries = model_catalogue()
+    entries = catalogue_models()
 
     assert entries
     assert all(entry.id for entry in entries)
@@ -25,7 +25,7 @@ def test_the_catalogue_lists_the_models() -> None:
 def test_the_chat_models_are_the_ones_the_visitor_picks() -> None:
     """The encoder is not a choice."""
     chat = chat_models()
-    embedding = [entry for entry in model_catalogue() if entry.role == "embedding"]
+    embedding = [entry for entry in catalogue_models() if entry.role == "embedding"]
 
     assert chat
     assert embedding
@@ -41,7 +41,7 @@ def test_a_missing_catalogue_is_not_a_crash(tmp_path: Path) -> None:
     """No catalogue, no models, no error."""
     empty = tmp_path / "models.toml"
 
-    assert model_catalogue(empty) == []
+    assert catalogue_models(empty) == []
     assert chat_models(empty) == []
     assert read_catalogue(empty) == {}
 
@@ -51,7 +51,7 @@ def test_a_broken_catalogue_is_not_a_crash(tmp_path: Path) -> None:
     broken = tmp_path / "models.toml"
     broken.write_text("this is not toml = = =\n")
 
-    assert model_catalogue(broken) == []
+    assert catalogue_models(broken) == []
 
 
 def test_a_session_keeps_the_model_it_was_given(store: SessionStore) -> None:

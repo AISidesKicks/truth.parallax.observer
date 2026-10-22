@@ -10,6 +10,7 @@ import tomllib
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
+from typing import Any
 
 from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -38,6 +39,11 @@ class Settings(BaseSettings):
     # room for the thinking tokens of a reasoning model
     llm_thinking_budget: int = 1500
     llm_temperature: float = 0.8
+    # the catalogue of the models the router serves
+    model_catalogue: Path = MODEL_CATALOGUE
+    # the model the app uses when the visitor does not pick one, empty means
+    # the catalogue decides
+    default_model: str = ""
 
     # --- embedding server ------------------------------------------------
     embedding_api_base: str = "http://localhost:11433/v1"
@@ -95,22 +101,24 @@ class ModelEntry:
     """One model in the catalogue."""
 
     id: str
+    file: str = ""
     role: str = "chat"
-    display: str = ""
-    size: str = ""
-    repo: str = ""
+    reasoning: bool = False
     quant: str = ""
+    size_mb: int = 0
+    display: str = ""
     note: str = ""
 
-    def to_dict(self) -> dict[str, str]:
+    def to_dict(self) -> dict[str, Any]:
         """The entry as the interface sees it."""
         return {
             "id": self.id,
+            "file": self.file,
             "role": self.role,
-            "display": self.display or self.id,
-            "size": self.size,
-            "repo": self.repo,
+            "reasoning": self.reasoning,
             "quant": self.quant,
+            "size_mb": self.size_mb,
+            "display": self.display or self.id,
             "note": self.note,
         }
 
@@ -128,7 +136,7 @@ def read_catalogue(path: Path | None = None) -> dict:
         return {}
 
 
-def model_catalogue(path: Path | None = None) -> list[ModelEntry]:
+def catalogue_models(path: Path | None = None) -> list[ModelEntry]:
     """Every model the router serves.
 
     The catalogue is a TOML file with one section per model. The name of the
@@ -142,11 +150,12 @@ def model_catalogue(path: Path | None = None) -> list[ModelEntry]:
         entries.append(
             ModelEntry(
                 id=name,
+                file=str(entry.get("file", "")),
                 role=str(entry.get("role", "chat")),
-                display=str(entry.get("display", name)),
-                size=str(entry.get("size", "")),
-                repo=str(entry.get("repo", "")),
+                reasoning=bool(entry.get("reasoning", False)),
                 quant=str(entry.get("quant", "")),
+                size_mb=int(entry.get("size_mb", 0) or 0),
+                display=str(entry.get("display", name)),
                 note=str(entry.get("note", "")),
             )
         )
@@ -156,12 +165,18 @@ def model_catalogue(path: Path | None = None) -> list[ModelEntry]:
 
 def chat_models(path: Path | None = None) -> list[ModelEntry]:
     """The models the visitor can pick."""
-    return [entry for entry in model_catalogue(path) if entry.role != "embedding"]
+    return [entry for entry in catalogue_models(path) if entry.role != "embedding"]
 
 
-def default_model(path: Path | None = None) -> str:
-    """The model the app uses when the visitor does not pick one."""
+def catalogue_default(path: Path | None = None) -> str:
+    """The model the catalogue points at."""
     chosen = read_catalogue(path).get("default")
-    if isinstance(chosen, str) and chosen:
-        return chosen
-    return get_settings().llm_model
+    return chosen if isinstance(chosen, str) else ""
+
+
+def default_model() -> str:
+    """The model the app uses when the visitor does not pick one."""
+    settings = get_settings()
+    if settings.default_model:
+        return settings.default_model
+    return catalogue_default(settings.model_catalogue) or settings.llm_model

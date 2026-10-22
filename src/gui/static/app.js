@@ -87,7 +87,7 @@ function showModelNote(model) {
   }
 
   const parts = [];
-  if (model.size) parts.push(model.size);
+  if (model.size_mb) parts.push(`${model.size_mb} MB`);
   if (model.quant) parts.push(model.quant);
   if (model.note) parts.push(model.note);
   blurb.textContent = parts.join(", ");

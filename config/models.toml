@@ -1,28 +1,38 @@
 # The model catalogue.
 #
 # The name of a section is the model id the API routes on, so it has to
-# match the section name in config/llama-models.ini. Adding a model means
-# adding a section here and a section there, and nothing in the code.
+# match the section name in config/llama-models.ini.
+#
+# The four steps to add a model:
+#   1. drop the GGUF into .models/llama/
+#   2. add a [section] to config/llama-models.ini, the section name is the
+#      model id the router routes on
+#   3. add an entry here
+#   4. restart the router and the app
+#
+# That is the whole extension point.
 #
 # The role tells the app what the model is for. A chat model answers, an
 # embedding model encodes. Only the chat models show up in the picker.
+# The names are quoted, a dot in a bare key would read as a nested table.
 
 # The model the app uses when the visitor does not pick one.
 default = "granite-4.0-h-tiny"
 
-# the names are quoted, a dot in a bare key would read as a nested table
 ["granite-4.0-h-tiny"]
+file = "granite-4.0-h-tiny-Q4_K_M.gguf"
 role = "chat"
-display = "Granite 4.0 H Tiny"
-size = "4231 MB"
-repo = "ibm-granite/granite-4.0-h-tiny-GGUF"
+reasoning = true
 quant = "Q4_K_M"
-note = "the default, the thinking trace comes back in the reasoning field"
+size_mb = 4231
+display = "Granite 4.0 H Tiny"
+note = "Hybrid MoE, thinking mode. The default."
 
 ["embeddinggemma-2"]
+file = "embeddinggemma-2-Q8_0.gguf"
 role = "embedding"
-display = "EmbeddingGemma 2"
-size = "310 MB"
-repo = "ggml-org/embeddinggemma-2-GGUF"
+reasoning = false
 quant = "Q8_0"
-note = "the encoder, 768 dimensions, multimodal"
+size_mb = 310
+display = "EmbeddingGemma 2"
+note = "768 dimensions, multimodal, the vision encoder is wired to it"
