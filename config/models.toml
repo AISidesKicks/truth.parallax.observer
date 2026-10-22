@@ -1,0 +1,28 @@
+# The model catalogue.
+#
+# The name of a section is the model id the API routes on, so it has to
+# match the section name in config/llama-models.ini. Adding a model means
+# adding a section here and a section there, and nothing in the code.
+#
+# The role tells the app what the model is for. A chat model answers, an
+# embedding model encodes. Only the chat models show up in the picker.
+
+# The model the app uses when the visitor does not pick one.
+default = "granite-4.0-h-tiny"
+
+# the names are quoted, a dot in a bare key would read as a nested table
+["granite-4.0-h-tiny"]
+role = "chat"
+display = "Granite 4.0 H Tiny"
+size = "4231 MB"
+repo = "ibm-granite/granite-4.0-h-tiny-GGUF"
+quant = "Q4_K_M"
+note = "the default, the thinking trace comes back in the reasoning field"
+
+["embeddinggemma-2"]
+role = "embedding"
+display = "EmbeddingGemma 2"
+size = "310 MB"
+repo = "ggml-org/embeddinggemma-2-GGUF"
+quant = "Q8_0"
+note = "the encoder, 768 dimensions, multimodal"

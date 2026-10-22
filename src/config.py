@@ -6,11 +6,19 @@ image runs in the container and on the host.
 
 from __future__ import annotations
 
+import tomllib
+from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
 from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# the project root, so the paths work from any folder
+ROOT = Path(__file__).resolve().parent.parent
+
+# the catalogue of the models the router serves
+MODEL_CATALOGUE = ROOT / "config" / "models.toml"
 
 
 class Settings(BaseSettings):
@@ -80,3 +88,80 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """The settings, read once."""
     return Settings()
+
+
+@dataclass(frozen=True)
+class ModelEntry:
+    """One model in the catalogue."""
+
+    id: str
+    role: str = "chat"
+    display: str = ""
+    size: str = ""
+    repo: str = ""
+    quant: str = ""
+    note: str = ""
+
+    def to_dict(self) -> dict[str, str]:
+        """The entry as the interface sees it."""
+        return {
+            "id": self.id,
+            "role": self.role,
+            "display": self.display or self.id,
+            "size": self.size,
+            "repo": self.repo,
+            "quant": self.quant,
+            "note": self.note,
+        }
+
+
+def read_catalogue(path: Path | None = None) -> dict:
+    """The catalogue file, as a dictionary."""
+    catalogue = path or MODEL_CATALOGUE
+    if not catalogue.exists():
+        return {}
+
+    try:
+        with catalogue.open("rb") as handle:
+            return tomllib.load(handle)
+    except Exception:
+        return {}
+
+
+def model_catalogue(path: Path | None = None) -> list[ModelEntry]:
+    """Every model the router serves.
+
+    The catalogue is a TOML file with one section per model. The name of the
+    section is the model id the API routes on.
+    """
+    entries: list[ModelEntry] = []
+
+    for name, entry in read_catalogue(path).items():
+        if not isinstance(entry, dict):
+            continue
+        entries.append(
+            ModelEntry(
+                id=name,
+                role=str(entry.get("role", "chat")),
+                display=str(entry.get("display", name)),
+                size=str(entry.get("size", "")),
+                repo=str(entry.get("repo", "")),
+                quant=str(entry.get("quant", "")),
+                note=str(entry.get("note", "")),
+            )
+        )
+
+    return entries
+
+
+def chat_models(path: Path | None = None) -> list[ModelEntry]:
+    """The models the visitor can pick."""
+    return [entry for entry in model_catalogue(path) if entry.role != "embedding"]
+
+
+def default_model(path: Path | None = None) -> str:
+    """The model the app uses when the visitor does not pick one."""
+    chosen = read_catalogue(path).get("default")
+    if isinstance(chosen, str) and chosen:
+        return chosen
+    return get_settings().llm_model

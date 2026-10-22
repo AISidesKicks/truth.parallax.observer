@@ -52,6 +52,7 @@ class Session:
     belief: str
     goal: str
     worldview: str
+    model: str = ""
     created: str = field(default_factory=lambda: datetime.now().isoformat())
     history: list[dict[str, str]] = field(default_factory=list)
     turns: list[dict[str, Any]] = field(default_factory=list)
@@ -79,6 +80,7 @@ class Session:
             "belief": self.belief,
             "goal": self.goal,
             "worldview": self.worldview,
+            "model": self.model,
             "created": self.created,
             "turns": self.turns,
             "arguments_worked": self.arguments_worked,
@@ -104,6 +106,7 @@ class SessionStore:
         belief: str | None = None,
         goal: str | None = None,
         worldview: str | None = None,
+        model: str = "",
     ) -> Session:
         """A new session.
 
@@ -111,6 +114,9 @@ class SessionStore:
         position. When the visitor says nothing, we assume the most common
         position, so the agent argues flat Earth by default, which is also
         the persona the project is named after.
+
+        The model is the one the visitor picked. When they picked nothing,
+        the app falls back to the default.
         """
         if not belief:
             belief = "the Earth is round"
@@ -129,17 +135,19 @@ class SessionStore:
             belief=belief,
             goal=goal,
             worldview=worldview,
+            model=model,
         )
         self.sessions[session_id] = session
 
         self._write_profile(session)
         logger.info(
-            "session %s created: alterego=%r belief=%s goal=%s worldview=%s",
+            "session %s created: alterego=%r belief=%s goal=%s worldview=%s model=%s",
             session_id,
             session.alterego,
             belief,
             goal,
             worldview,
+            model,
         )
         return session
 

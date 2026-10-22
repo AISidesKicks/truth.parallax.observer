@@ -45,6 +45,41 @@ def test_the_status_works_without_a_model_server(client: TestClient) -> None:
     assert "viking" in data
 
 
+def test_the_models_can_be_listed(client: TestClient) -> None:
+    """The catalogue the picker is filled from."""
+    response = client.get("/api/models")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["default"]
+    assert data["models"]
+    assert all(entry["id"] for entry in data["models"])
+
+
+def test_a_session_keeps_the_model_it_was_asked_for(client: TestClient) -> None:
+    """The visitor picks the model."""
+    response = client.post(
+        "/api/session",
+        json={"alterego": "Sam", "belief": "the Earth is flat", "model": "granite-4.0-h-tiny"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["model"] == "granite-4.0-h-tiny"
+
+
+def test_a_session_with_an_unknown_model_gets_the_default(client: TestClient) -> None:
+    """A model the catalogue does not know is refused."""
+    from src.config import default_model
+
+    response = client.post(
+        "/api/session",
+        json={"alterego": "Sam", "model": "a-model-that-does-not-exist"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["model"] == default_model()
+
+
 def test_a_session_can_be_created(client: TestClient) -> None:
     """Start a session."""
     response = client.post(
@@ -109,7 +144,7 @@ async def test_a_fire_chat_debate_runs(client: TestClient, monkeypatch) -> None:
 
     # the real model server takes a minute for a whole debate, and the
     # point of this test is the wiring, not the model
-    monkeypatch.setattr(app.state, "llm", TypedLLM(), raising=False)
+    monkeypatch.setattr(app.state.models, "get", lambda model="": TypedLLM())
     monkeypatch.setattr(app.state, "viking", WorldviewViking(), raising=False)
 
     created = client.post(

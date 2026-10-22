@@ -53,6 +53,58 @@ refreshStatus();
 
 /* ---------------------------------------------------------------- setup */
 
+/* the models the visitor can pick, from the catalogue */
+async function loadModels() {
+  const select = $("model");
+  if (!select) return;
+
+  try {
+    const response = await fetch("/api/models");
+    const data = await response.json();
+
+    select.innerHTML = "";
+    for (const model of data.models) {
+      const option = document.createElement("option");
+      option.value = model.id;
+      option.textContent = model.display;
+      select.appendChild(option);
+    }
+
+    select.value = data.default;
+    showModelNote(data.models.find((m) => m.id === data.default));
+  } catch {
+    select.innerHTML = "<option value=''>the catalogue is not reachable</option>";
+  }
+}
+
+function showModelNote(model) {
+  const blurb = $("model-blurb");
+  if (!blurb) return;
+
+  if (!model) {
+    blurb.textContent = "";
+    return;
+  }
+
+  const parts = [];
+  if (model.size) parts.push(model.size);
+  if (model.quant) parts.push(model.quant);
+  if (model.note) parts.push(model.note);
+  blurb.textContent = parts.join(", ");
+}
+
+$("model").addEventListener("change", async () => {
+  try {
+    const response = await fetch("/api/models");
+    const data = await response.json();
+    showModelNote(data.models.find((m) => m.id === $("model").value));
+  } catch {
+    // the blurb is a nicety, it can stay as it is
+  }
+});
+
+loadModels();
+
 /* ----------------------------------------------------------------- chat */
 
 function connect() {
@@ -318,6 +370,7 @@ $("setup-form").addEventListener("submit", async (event) => {
     alterego: $("alterego").value.trim() || "Visitor",
     belief: $("belief").value,
     worldview: $("worldview").value,
+    model: $("model") ? $("model").value : "",
     demo: $("demo") ? $("demo").value : null,
   };
 
@@ -343,7 +396,11 @@ $("setup-form").addEventListener("submit", async (event) => {
     const started = await fetch("/api/demo", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: payload.demo, alterego: payload.alterego }),
+      body: JSON.stringify({
+        id: payload.demo,
+        alterego: payload.alterego,
+        model: payload.model,
+      }),
     });
     if (!started.ok) {
       $("watch-status").textContent = "could not start the demo";

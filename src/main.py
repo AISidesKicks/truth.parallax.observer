@@ -21,7 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from src.agentic.context import ContextManager
 from src.agentic.fire_chat import STAGE_ORDER, Debate, FireChat, Side, Stage
 from src.agentic.orchestrator import Orchestrator
-from src.config import get_settings
+from src.config import Settings, chat_models, default_model, get_settings
 from src.demos import demo_list, get_demo
 from src.llm import LLMClient
 from src.observability import setup_tracing
@@ -30,6 +30,57 @@ from src.session import Session, SessionStore
 logger = logging.getLogger(__name__)
 
 GUI_DIR = Path(__file__).parent / "gui"
+
+
+class ModelClients:
+    """One client per model id, made on first use.
+
+    The model server routes on the model id in the request body, so a second
+    model is a second client and nothing more.
+    """
+
+    def __init__(self, settings: Settings) -> None:
+        self.settings = settings
+        self.clients: dict[str, LLMClient] = {}
+
+    def get(self, model: str = "") -> LLMClient:
+        """The client for one model."""
+        name = model or self.settings.llm_model
+        if name not in self.clients:
+            self.clients[name] = LLMClient(
+                base_url=self.settings.llm_api_base,
+                model=name,
+                timeout=self.settings.llm_timeout,
+                max_tokens=self.settings.llm_max_tokens,
+                temperature=self.settings.llm_temperature,
+                instrument=self.settings.phoenix_enabled,
+            )
+        return self.clients[name]
+
+    def loaded(self) -> list[str]:
+        """The models that have a client already."""
+        return sorted(self.clients)
+
+    async def aclose(self) -> None:
+        """Close every client."""
+        for client in self.clients.values():
+            await client.aclose()
+
+
+def pick_model(requested: str = "") -> str:
+    """The model a session should use.
+
+    A model the catalogue does not know is refused, unless the catalogue is
+    missing altogether, then the request is taken at face value.
+    """
+    models = chat_models()
+    if not models:
+        return requested or default_model()
+
+    known = {entry.id for entry in models}
+    if requested in known:
+        return requested
+    return default_model()
 
 
 @asynccontextmanager
@@ -41,14 +92,7 @@ async def lifespan(app: FastAPI):
     if settings.phoenix_enabled:
         setup_tracing(settings.otel_endpoint, enabled=True)
 
-    llm = LLMClient(
-        base_url=settings.llm_api_base,
-        model=settings.llm_model,
-        timeout=settings.llm_timeout,
-        max_tokens=settings.llm_max_tokens,
-        temperature=settings.llm_temperature,
-        instrument=settings.phoenix_enabled,
-    )
+    models = ModelClients(settings)
 
     viking = None
     try:
@@ -67,26 +111,40 @@ async def lifespan(app: FastAPI):
         viking = None
 
     app.state.settings = settings
-    app.state.llm = llm
+    app.state.models = models
     app.state.viking = viking
     app.state.sessions = SessionStore(profile_dir=settings.profile_path, viking=viking)
-    app.state.orchestrator = Orchestrator(
-        llm=llm,
-        viking=viking,
-        context_manager=ContextManager(
-            max_tokens=settings.context_max_tokens,
-            alert_threshold=settings.context_alert_threshold,
-            recent_turns_kept=settings.context_recent_turns,
-        ),
-        top_k=settings.retrieval_top_k,
-        target_tier=settings.retrieval_target,
+    app.state.context = ContextManager(
+        max_tokens=settings.context_max_tokens,
+        alert_threshold=settings.context_alert_threshold,
+        recent_turns_kept=settings.context_recent_turns,
     )
+    # one orchestrator per model, made when a session asks for it
+    app.state.orchestrators: dict[str, Orchestrator] = {}
 
     yield
 
-    await llm.aclose()
+    await models.aclose()
     if viking is not None:
         viking.close()
+
+
+def orchestrator_for(model: str) -> Orchestrator:
+    """The orchestrator that talks to one model."""
+    name = model or default_model()
+    orchestrators: dict[str, Orchestrator] = app.state.orchestrators
+
+    if name not in orchestrators:
+        settings: Settings = app.state.settings
+        orchestrators[name] = Orchestrator(
+            llm=app.state.models.get(name),
+            viking=app.state.viking,
+            context_manager=app.state.context,
+            top_k=settings.retrieval_top_k,
+            target_tier=settings.retrieval_target,
+        )
+
+    return orchestrators[name]
 
 
 app = FastAPI(title="parallax.observer", version="0.1.0", lifespan=lifespan)
@@ -120,7 +178,8 @@ async def health() -> dict[str, Any]:
 @app.get("/api/status")
 async def status() -> dict[str, Any]:
     """What the monitoring bar shows."""
-    llm: LLMClient = app.state.llm
+    models: ModelClients = app.state.models
+    llm: LLMClient = models.get(default_model())
     viking = app.state.viking
 
     llm_up = llm.available()
@@ -154,7 +213,18 @@ async def status() -> dict[str, Any]:
             "up": viking_up,
             "corpus": corpus,
         },
+        "models": models.loaded(),
         "sessions": len(app.state.sessions.list()),
+    }
+
+
+@app.get("/api/models")
+async def model_list() -> dict[str, Any]:
+    """The models the visitor can pick."""
+    models = chat_models()
+    return {
+        "default": default_model(),
+        "models": [entry.to_dict() for entry in models],
     }
 
 
@@ -245,6 +315,7 @@ async def create_session(payload: dict[str, Any]) -> JSONResponse:
         belief=payload.get("belief"),
         goal=payload.get("goal"),
         worldview=payload.get("worldview"),
+        model=pick_model(payload.get("model", "")),
     )
     return JSONResponse(session.to_dict())
 
@@ -283,8 +354,8 @@ async def chat(websocket: WebSocket, session_id: str) -> None:
         await websocket.close()
         return
 
-    orchestrator: Orchestrator = app.state.orchestrator
-    llm: LLMClient = app.state.llm
+    orchestrator = orchestrator_for(session.model)
+    llm: LLMClient = orchestrator.llm
 
     await websocket.send_json(
         {
@@ -402,7 +473,7 @@ async def fire_chat(websocket: WebSocket, session_id: str) -> None:
         await websocket.close()
         return
 
-    llm: LLMClient = app.state.llm
+    llm: LLMClient = app.state.models.get(session.model)
     viking = app.state.viking
 
     await websocket.send_json(
@@ -481,6 +552,7 @@ async def start_demo(payload: dict[str, Any]) -> JSONResponse:
         alterego=payload.get("alterego", "Visitor"),
         belief=demo.belief,
         worldview=demo.worldview,
+        model=pick_model(payload.get("model", "")),
     )
     return JSONResponse({"session": session.to_dict(), "demo": demo.to_dict()})
 
@@ -501,8 +573,8 @@ async def watch_demo(websocket: WebSocket, session_id: str) -> None:
         await websocket.close()
         return
 
-    orchestrator: Orchestrator = app.state.orchestrator
-    llm: LLMClient = app.state.llm
+    orchestrator = orchestrator_for(session.model)
+    llm: LLMClient = orchestrator.llm
 
     demo = get_demo(websocket.query_params.get("demo", ""))
     if demo is None:
