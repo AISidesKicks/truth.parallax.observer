@@ -141,13 +141,25 @@ button:hover { color: var(--text); border-color: var(--dim); }
 
 .turn { margin-bottom: 22px; }
 
+/* the label is a column, so the text always starts in the same place and
+   never runs into it. "visitor" is wider than "you", and it used to touch */
+.turn .you {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+
 .turn .who {
   display: inline-block;
-  min-width: 52px;
+  min-width: 58px;
   color: var(--dim);
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+.turn .you .who {
+  flex: 0 0 58px;
 }
 
 .turn .you .text { color: var(--text); }
@@ -217,7 +229,8 @@ button:hover { color: var(--text); border-color: var(--dim); }
 #status.down { color: var(--red); }
 
 @media (max-width: 700px) {
-  .turn .who { min-width: 40px; }
+  .turn .who { min-width: 50px; }
+  .turn .you .who { flex: 0 0 50px; }
   #facts { font-size: 12px; }
 }
 
@@ -355,4 +368,21 @@ button:hover { color: var(--text); border-color: var(--dim); }
 
 @keyframes blink {
   50% { opacity: 0; }
+}
+
+/* the fact text carries markdown headings */
+.fact .source .md-h {
+  color: var(--blue);
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 10px 0 4px;
+}
+
+.fact .source .md-h:first-child {
+  margin-top: 0;
+}
+
+.fact .source strong {
+  color: var(--text);
 }

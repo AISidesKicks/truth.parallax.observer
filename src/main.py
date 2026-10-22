@@ -659,6 +659,19 @@ async def _type_out(websocket: WebSocket, text: str, speed: float = 0.012) -> No
 # Static
 # ----------------------------------------------------------------------
 
+class NoCacheStaticFiles(StaticFiles):
+    """Static files that are never cached.
+
+    The interface changes while the lab is running, and a cached script is
+    a confusing way to lose an afternoon.
+    """
+
+    def file_response(self, *args: Any, **kwargs: Any) -> Any:
+        response = super().file_response(*args, **kwargs)
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+        return response
+
+
 static_dir = GUI_DIR / "static"
 if static_dir.exists():
-    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+    app.mount("/static", NoCacheStaticFiles(directory=static_dir), name="static")

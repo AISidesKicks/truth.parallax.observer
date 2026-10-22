@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -271,6 +272,7 @@ class Orchestrator:
         )
 
         text = ""
+        started = time.time()
         try:
             async for delta in self.llm.stream_chat(
                 conversation, max_tokens=900
@@ -294,8 +296,8 @@ class Orchestrator:
             facts=facts,
             emotion=emotion_state.current,
             reasoning="",
-            tokens=0,
-            elapsed=0.0,
+            tokens=len(text.split()),
+            elapsed=time.time() - started,
         )
 
     def _read_the_visitor(

@@ -182,7 +182,7 @@ function factCard(fact) {
       ${picture}
       <div class="uri">${fact.uri}</div>
       <div class="score">score ${(fact.score || 0).toFixed(3)} | L${fact.level}</div>
-      <div class="abstract">${fact.abstract || ""}</div>
+      <div class="abstract">${markdownToHtml(fact.abstract || "")}</div>
       <div class="source hidden"></div>
     </div>`;
 }
@@ -208,6 +208,20 @@ function imageTag(uri) {
   return `<img class="picture" src="${src}" alt="${match[1]}" loading="lazy">`;
 }
 
+/* the fact text is markdown, and the interface shows it as text */
+function markdownToHtml(text) {
+  if (!text) return "";
+  const escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  return escaped
+    .replace(/^#{1,6}\s*(.+)$/gm, '<div class="md-h">$1</div>')
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*([^*]+)\*/g, "<em>$1</em>");
+}
+
 /* open a fact and show where it came from */
 async function openFact(node) {
   const source = node.querySelector(".source");
@@ -230,11 +244,13 @@ async function openFact(node) {
     }
 
     const parts = [];
-    if (data.overview) parts.push(`<div class="abstract">${data.overview}</div>`);
+    if (data.overview) {
+      parts.push(`<div class="abstract">${markdownToHtml(data.overview)}</div>`);
+    }
     if (data.content) {
       const text = data.content.slice(0, 1200);
       const more = data.content.length > 1200 ? "\n\n..." : "";
-      parts.push(`<div class="content">${text}${more}</div>`);
+      parts.push(`<div class="content">${markdownToHtml(text + more)}</div>`);
     }
     source.innerHTML = parts.join("") || "<div class=\"score\">nothing to show</div>";
   } catch (error) {
