@@ -29,7 +29,7 @@ def test_the_chat_models_are_the_ones_the_visitor_picks() -> None:
 
     assert chat
     assert embedding
-    assert not set(entry.id for entry in chat) & set(entry.id for entry in embedding)
+    assert not {entry.id for entry in chat} & {entry.id for entry in embedding}
 
 
 def test_the_default_model_is_a_chat_model() -> None:
