@@ -55,6 +55,14 @@ else
     echo "prlx-viking is not running, skipping"
 fi
 
+echo -e "\n--- The stack end to end ---"
+# models, memory, corpus on disk, index and scoped retrieval, all of it
+if command -v python >/dev/null 2>&1; then
+    python ../scripts/verify_stack.py --llm "http://localhost:$LLM_PORT/v1" --server "http://localhost:$VIKING_PORT" || exit 1
+else
+    echo "python is not on the path, skipping the stack check"
+fi
+
 echo -e "\n"
 echo "=========================================="
 echo "=== All tests complete ==="

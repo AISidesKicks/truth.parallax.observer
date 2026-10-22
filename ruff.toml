@@ -29,8 +29,3 @@ exclude = [
     "scratch",
     "investigations",
 ]
-
-[lint.per-file-ignores]
-# Legacy ingestion scripts, rewritten as part of the tooling upgrade
-"scripts/ingest_to_viking.py" = ["E722"]
-"scripts/test_viking_native.py" = ["E722"]
