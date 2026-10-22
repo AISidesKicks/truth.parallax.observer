@@ -295,6 +295,7 @@ $("setup-form").addEventListener("submit", async (event) => {
     alterego: $("alterego").value.trim() || "Visitor",
     belief: $("belief").value,
     worldview: $("worldview").value,
+    demo: $("demo") ? $("demo").value : null,
   };
 
   const response = await fetch("/api/session", {
@@ -314,6 +315,20 @@ $("setup-form").addEventListener("submit", async (event) => {
   if (mode === "fire") {
     $("fire").classList.remove("hidden");
     $("topic").focus();
+  } else if (mode === "watch") {
+    const demo = watchDemo && watchDemo.find((d) => d.id === payload.demo);
+    const started = await fetch("/api/demo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: payload.demo, alterego: payload.alterego }),
+    });
+    if (!started.ok) {
+      $("watch-status").textContent = "could not start the demo";
+      return;
+    }
+    const data = await started.json();
+    state.session = data.session;
+    startWatch(data.session, data.demo);
   } else {
     $("chat").classList.remove("hidden");
     $("message").disabled = false;
@@ -402,3 +417,24 @@ function showVerdict(moderation) {
     `<div class="side-score">winner: <span class="winner">${moderation.winner}</span></div>` +
     `<div class="side-score">${moderation.summary}</div>`;
 }
+
+
+/* a link can start a demo straight away, so a demo can be shared */
+async function startFromUrl() {
+  const wanted = new URLSearchParams(location.search).get("demo");
+  if (!wanted) return;
+
+  const response = await fetch("/api/demo", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id: wanted, alterego: "Sam" }),
+  });
+  if (!response.ok) return;
+
+  const data = await response.json();
+  state.session = data.session;
+  $("setup").classList.add("hidden");
+  startWatch(data.session, data.demo);
+}
+
+startFromUrl();

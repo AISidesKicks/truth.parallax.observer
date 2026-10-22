@@ -22,6 +22,7 @@ from src.agentic.context import ContextManager
 from src.agentic.fire_chat import STAGE_ORDER, Debate, FireChat, Side, Stage
 from src.agentic.orchestrator import Orchestrator
 from src.config import get_settings
+from src.demos import demo_list, get_demo
 from src.llm import LLMClient
 from src.observability import setup_tracing
 from src.session import Session, SessionStore
@@ -460,6 +461,198 @@ async def fire_chat(websocket: WebSocket, session_id: str) -> None:
         logger.info("the debate disconnected")
     except Exception:
         logger.exception("the debate failed")
+
+
+@app.get("/api/demos")
+async def demos() -> JSONResponse:
+    """The scripts that can be watched."""
+    return JSONResponse(demo_list())
+
+
+@app.post("/api/demo")
+async def start_demo(payload: dict[str, Any]) -> JSONResponse:
+    """Start one of the scripts."""
+    demo = get_demo(payload.get("id", ""))
+    if demo is None:
+        return JSONResponse({"error": "no such demo"}, status_code=404)
+
+    store: SessionStore = app.state.sessions
+    session = store.create(
+        alterego=payload.get("alterego", "Visitor"),
+        belief=demo.belief,
+        worldview=demo.worldview,
+    )
+    return JSONResponse({"session": session.to_dict(), "demo": demo.to_dict()})
+
+
+@app.websocket("/ws/demo/{session_id}")
+async def watch_demo(websocket: WebSocket, session_id: str) -> None:
+    """Play a script, with the agent answering live.
+
+    The server drives the visitor's side, so the reader only has to watch.
+    A message from the reader takes over and the script stops.
+    """
+    await websocket.accept()
+
+    store: SessionStore = app.state.sessions
+    session = store.get(session_id)
+    if session is None:
+        await websocket.send_json({"type": "error", "message": "no such session"})
+        await websocket.close()
+        return
+
+    orchestrator: Orchestrator = app.state.orchestrator
+    llm: LLMClient = app.state.llm
+
+    demo = get_demo(websocket.query_params.get("demo", ""))
+    if demo is None:
+        await websocket.send_json({"type": "error", "message": "no such demo"})
+        await websocket.close()
+        return
+
+    await websocket.send_json(
+        {
+            "type": "ready",
+            "session": session.to_dict(),
+            "demo": demo.to_dict(),
+            "model": llm.model,
+        }
+    )
+
+    playback = asyncio.create_task(
+        _play_demo(websocket, orchestrator, store, session, demo)
+    )
+
+    try:
+        while True:
+            raw = await websocket.receive_text()
+            try:
+                message = json.loads(raw)
+            except json.JSONDecodeError:
+                message = {"type": "message", "text": raw}
+
+            kind = message.get("type", "message")
+
+            if kind == "ping":
+                await websocket.send_json({"type": "pong"})
+                continue
+
+            if kind == "skip":
+                playback.cancel()
+                playback = asyncio.create_task(
+                    _play_demo(
+                        websocket,
+                        orchestrator,
+                        store,
+                        session,
+                        demo,
+                        start=len(demo.lines) - 1,
+                    )
+                )
+                continue
+
+            if kind != "message":
+                continue
+
+            # the reader takes over, the script is over
+            playback.cancel()
+            text = (message.get("text") or "").strip()
+            if not text:
+                continue
+
+            await websocket.send_json({"type": "line", "text": text, "taken_over": True})
+            await _run_and_stream(
+                websocket, orchestrator, store, session, text, message.get("category")
+            )
+
+    except WebSocketDisconnect:
+        playback.cancel()
+        logger.info("the demo disconnected")
+    except Exception:
+        playback.cancel()
+        logger.exception("the demo failed")
+
+
+async def _play_demo(
+    websocket: WebSocket,
+    orchestrator: Orchestrator,
+    store: SessionStore,
+    session: Session,
+    demo: Any,
+    start: int = 0,
+) -> None:
+    """Play the script, one line at a time."""
+    for line in demo.lines[start:]:
+        try:
+            # the visitor types it out, so it reads like a conversation
+            await _type_out(websocket, line.text)
+            await websocket.send_json(
+                {"type": "line", "text": line.text, "note": line.note}
+            )
+            await asyncio.sleep(line.pause)
+
+            turn = None
+            async for piece in orchestrator.stream_turn(
+                message=line.text,
+                worldview=session.worldview,
+                alterego=session.alterego,
+                belief=session.belief,
+                goal=session.goal,
+                state=session.state,
+                emotion_state=session.emotion,
+                history=session.history,
+                preserved=session.preserved(),
+            ):
+                if isinstance(piece, str):
+                    await websocket.send_json({"type": "delta", "text": piece})
+                else:
+                    turn = piece
+
+            if turn is None:
+                return
+
+            # the visitor's reaction is what says whether the argument landed
+            success: bool | None = None
+            if session.state.user_agreed:
+                success = True
+            elif session.state.user_rejected:
+                success = False
+
+            store.record_turn(session, turn, success=success)
+            await websocket.send_json({"type": "reply", "turn": turn.to_dict()})
+            await asyncio.sleep(1.0)
+
+        except asyncio.CancelledError:
+            logger.info("the playback was cut off")
+            raise
+        except Exception as exc:
+            logger.exception("the playback failed")
+            with suppress(Exception):
+                await websocket.send_json(
+                    {"type": "error", "message": f"something went wrong: {exc}"}
+                )
+            return
+
+    await websocket.send_json(
+        {
+            "type": "done",
+            "summary": {
+                "turns": len(session.turns),
+                "arguments_worked": session.arguments_worked,
+                "arguments_rejected": session.arguments_rejected,
+            },
+        }
+    )
+
+
+async def _type_out(websocket: WebSocket, text: str, speed: float = 0.012) -> None:
+    """The visitor types, so the reader can follow along."""
+    for index, char in enumerate(text):
+        await websocket.send_json({"type": "typing", "text": char})
+        if char in ".,!? " and index % 8 == 0:
+            await asyncio.sleep(speed * 8)
+        else:
+            await asyncio.sleep(speed)
 
 
 # ----------------------------------------------------------------------

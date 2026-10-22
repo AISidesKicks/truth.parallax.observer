@@ -44,7 +44,14 @@
       <select id="mode" name="mode">
         <option value="chat">PersuChat, one on one</option>
         <option value="fire">Fire Chat, three way debate</option>
+        <option value="watch">Watch, a scripted conversation</option>
       </select>
+
+      <div id="demo-picker" class="hidden">
+        <label for="demo">The script</label>
+        <select id="demo" name="demo"></select>
+        <p class="hint" id="demo-blurb"></p>
+      </div>
 
       <button type="submit">Begin</button>
     </form>
@@ -71,6 +78,32 @@
     </form>
 
     <div id="status">disconnected</div>
+  </section>
+
+  <section id="watch" class="panel hidden">
+    <div class="watch-head">
+      <h2 id="watch-title">-</h2>
+      <p id="watch-blurb" class="lead"></p>
+      <div class="watch-controls">
+        <button type="button" id="watch-skip">skip the line</button>
+        <button type="button" id="watch-takeover">take over</button>
+      </div>
+    </div>
+
+    <div id="watch-transcript"></div>
+
+    <div id="watch-summary" class="hidden">
+      <h3>How it went</h3>
+      <div id="watch-summary-body"></div>
+    </div>
+
+    <form id="watch-form" class="hidden">
+      <span class="prompt">&gt;</span>
+      <input id="watch-message" name="message" autocomplete="off" placeholder="take over, type here">
+      <button type="submit">send</button>
+    </form>
+
+    <div id="watch-status">ready</div>
   </section>
 
   <section id="fire" class="panel hidden">
@@ -103,5 +136,6 @@
 </template>
 
 <script src="/static/app.js"></script>
+<script src="/static/watch.js"></script>
 </body>
 </html>
