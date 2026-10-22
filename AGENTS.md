@@ -49,3 +49,21 @@ Auto-commit locally, so we can keep track, using these rules:
 ## Task completion notification
 
 When the work for a task is done - announce "All tasks are done".
+
+## The open goals are the work list
+
+Read `plans/open-goals.md` first, before you plan anything.
+
+- It holds the goals that are not built yet, each one with what it is, why it
+  matters, where to start, and what is already done.
+- Each goal is independent of every other one. Pick one, do it, commit it.
+- The state of the stack is never a guess. `pixi run verify` checks the
+  models, the memory server, the corpus and the scoped retrieval in one
+  command, and `pixi run corpus-stats` prints the corpus numbers.
+- Anything that touches the app keeps the scenarios in `plans/bdd-app.md`
+  green. They are the contract.
+
+The plan documents under `plans/` are the design notes. The live ones are
+`plans/bdd-app.md`, `plans/agent-framework.md`, `plans/tooling-upgrade.md`,
+`plans/enrichment.md`, `plans/sources.md` and `plans/open-goals.md`. The rest
+are marked as historical and say so in the first lines.
